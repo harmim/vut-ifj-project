@@ -56,3 +56,6 @@ dkms.conf
 
 # CMake
 /cmake-*/
+
+# Project executable
+ifj17_compiler
