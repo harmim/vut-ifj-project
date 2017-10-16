@@ -3,31 +3,32 @@
  *
  * Authors:   Vojtěch Hertl <xhertl04@stud.fit.vutbr.cz>
  *            Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
- *            Timotej Halás <xhalas10@stud.fit.vutbr.cz>
- *            Matej Karas <xkaras34@stud.fit.vutbr.cz>
  *
  *            Header file for scanner
  **************************************************************/
 
-#ifndef SCANNER_SCANNER_H
-#define SCANNER_SCANNER_H
+#ifndef _SCANNER_H
+#define _SCANNER_H
 
-#endif //SCANNER_SCANNER_H
-//#include "string.h"
+#include "string.h"
+
+
+typedef union
+{
+	int int_val;
+	double decimal_val;
+	char *ptr_val;
+} attribute;
+
 
 typedef struct
 {
-    char* str;		// misto pro dany retezec ukonceny znakem '\0'
-    int length;		// skutecna delka retezce
-    int allocSize;	// velikost alokovane pameti
-} string;
+	int type;
+	attribute attr;
+} token;
 
-void strClear(string *s);
-int strAddChar(string *s1, char c);
-int strCmpConstStr(string *s1, char* s2);
-int keyword_check(string *id);
-void setSourceFile(FILE *f);
-int getNextToken(string *attr);
+
+token get_next_token(FILE *source_file);
 
 #define STATE_START 0
 #define STATE_COMMENTARY 1
@@ -59,3 +60,5 @@ int getNextToken(string *attr);
 
 #define END_OF_FILE 100
 #define SCANNER_ERROR 101
+
+#endif //SCANNER_SCANNER_H

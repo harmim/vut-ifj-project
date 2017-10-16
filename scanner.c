@@ -3,8 +3,6 @@
  *
  * Authors:   Vojtěch Hertl <xhertl04@stud.fit.vutbr.cz>
  *            Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
- *            Timotej Halás <xhalas10@stud.fit.vutbr.cz>
- *            Matej Karas <xkaras34@stud.fit.vutbr.cz>
  *
  *            Implementation of scanner
  **************************************************************/
@@ -12,72 +10,31 @@
 
 #include <stdio.h>
 #include <ctype.h>
-#include <string.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include "scanner.h"
-//#include "string.h"
+#include "string.h"
 
-FILE *source_file;
-
-
-
-
-void strClear(string *s)
-{
-    s->str[0] = '\0';
-    s->length = 0;
-}
-
-int strAddChar(string *s1, char c)
-// prida na konec retezce jeden znak
-{
-    if (s1->length + 1 >= s1->allocSize)
-    {
-        // pamet nestaci, je potreba provest realokaci
-        if ((s1->str = (char*) realloc(s1->str, (size_t)s1->length + 8)) == NULL)
-            return -1;
-        s1->allocSize = s1->length + 8;
-    }
-    s1->str[s1->length] = c;
-    s1->length++;
-    s1->str[s1->length] = '\0';
-    return 1;
-}
-
-int strCmpConstStr(string *s1, char* s2)
-// porovna nas retezec s konstantnim retezcem
-{
-    for(int i = 0; s1->str[i]; i++){
-        s1->str[i] = tolower(s1->str[i]);
-        return strcmp(s1->str, s2);
-    }
 
 /**
  * Compares string with keyword
  * @param id string which is compared
  * @return reference value to keyword or just reference value of ID
  */
-int keyword_check(string *id)
+static int keyword_check(string *id)
 {
-	char *keyword[35] = {"as", "asc", "declare", "dim", "do", "double", "else", "end", "chr",
-						  "function", "if", "input", "integer", "length", "loop", "print", "return",
-						  "scope", "string", "substr", "then", "while", "and", "boolean", "continue",
-						  "elseif", "exit", "false", "for", "next", "not", "or", "shared", "static", "true"};
-	for (int i = 100; i < 135; i++ )
+	char *keyword[35] = {
+		"as", "asc", "declare", "dim", "do", "double", "else", "end", "chr",
+		"function", "if", "input", "integer", "length", "loop", "print", "return",
+		"scope", "string", "substr", "then", "while", "and", "boolean", "continue",
+		"elseif", "exit", "false", "for", "next", "not", "or", "shared", "static", "true"
+	};
+	for (int i = 100; i < 135; i++)
 	{
-		if (strCmpConstStr(id, keyword[i]) == 0) return i;
+		if (str_cmp_const_str(id, keyword[i]) == 0)
+		{ return i; }
 	}
-	  return 136;
+	return 136;
 
-}
-
-/**
- * Sets the source file
- * @param f file, which is opened and analysed
- */
-void set_source_file(FILE *f)
-{
-	source_file = f;
 }
 
 /**
@@ -85,69 +42,117 @@ void set_source_file(FILE *f)
  * @param attr number, string or ID
  * @return reference value which shows what token was read and is later used by parser or error if something went wrong
  */
-int get_next_token(string *attr)
+token get_next_token(FILE *source_file)
 {
-	int state = 0;
+	int state = STATE_START;
+	token token = token;
+
 	int is_double_number = 0; //flag
 	int c;
-    strClear(attr);
+	string *str;
+	str_clear(str);
 
 	while (1)
 	{
 		c = getc(source_file);
 
 		switch (state)
-        {
+		{
 			case (STATE_START):
 				if (isspace(c))
+				{
 					state = STATE_START;
+				}
 
-				else if (c == 39)// '
+				else if (c == 39)
+				{// '
 					state = STATE_COMMENTARY;
-				else if (c == 47) // /
+				}
+				else if (c == 47)
+				{ // /
 					state = STATE_BACKSLASH;
+				}
 				else if (isalpha(c))
 				{
-					strAddChar(attr, (char)c);
+					str_add_char(str, (char) c);
 					state = STATE_IDENTIFIER_OR_KEYWORD;
 				}
 				else if (isdigit(c))
 				{
-					strAddChar(attr, (char) c);
+					str_add_char(str, (char) c);
 					state = STATE_NUMBER;
 				}
 				else if (c == 33) // !
 				{
-					strAddChar(attr, (char) c);
+					str_add_char(str, (char) c);
 					state = STATE_STRING_START;
 				}
-				else if (c == 60) // <
+				else if (c == 60)
+				{ // <
 					state = STATE_LESS_THAN;
-				else if (c == 62) // >
+				}
+				else if (c == 62)
+				{ // >
 					state = STATE_MORE_THAN;
-				else if (c == 61) return 61; // =
-				else if (c == 43) return 43; // +
-				else if (c == 45) return 45; // -
-				else if (c == 42) return 42; // *
-				else if (c == 92) return 92; // '\'
-				else if (c == 40) return 40; // (
-				else if (c == 41) return 41; // )
-				else if (c == 44) return 44; // ,
-				else if (c == 59) return 59; // ;
-				else if (c == EOF) return END_OF_FILE;
+				}
+				else if (c == '=')
+				{
+					return 61; // =
+				}
+				else if (c == 43)
+				{
+					return 43; // +
+				}
+				else if (c == 45)
+				{
+					return 45; // -
+				}
+				else if (c == 42)
+				{
+					return 42; // *
+				}
+				else if (c == 92)
+				{
+					return 92; // '\'
+				}
+				else if (c == 40)
+				{
+					return 40; // (
+				}
+				else if (c == 41)
+				{
+					return 41; // )
+				}
+				else if (c == 44)
+				{
+					return 44; // ,
+				}
+				else if (c == 59)
+				{
+					return 59; // ;
+				}
+				else if (c == EOF)
+				{ return END_OF_FILE; }
 				else
+				{
 					return SCANNER_ERROR;
+				}
 				break;
 
 			case (STATE_COMMENTARY):
-				if (c == 10) //EOL
+				if (c == 10)
+				{ //EOL
 					state = STATE_START;
+				}
 				break;
 
 			case (STATE_BACKSLASH):
 				if (c == 39)
+				{
 					state = STATE_BLOCK_COMMENTARY;
-				else return 47; // /
+				}
+				else
+				{ return 47; } // /
 
 			case (STATE_BLOCK_COMMENTARY):
 				if (c == 39)
@@ -164,31 +169,32 @@ int get_next_token(string *attr)
 				else state = STATE_BLOCK_COMMENTARY;
 				break;
 
+				// ještě tam můžet být znak _
 			case (STATE_IDENTIFIER_OR_KEYWORD):
 				if (isalnum(c))
-					strAddChar(attr, (char)c);
+					str_add_char(str, (char) c);
 				else
 				{
 					ungetc(c, source_file);
-					return keyword_check(attr);
+					return keyword_check(str);
 				}
 				break;
 
 			case (STATE_NUMBER):
 				if (isdigit(c))
 				{
-					strAddChar(attr, (char)c);
+					str_add_char(str, (char) c);
 				}
 				else if (c == 46) // .
 				{
 					state = STATE_NUMBER_POINT;
-					strAddChar(attr, (char) c);
+					str_add_char(str, (char) c);
 					is_double_number = 1;
 				}
 				else if (tolower(c) == 101) //e
 				{
 					state = STATE_NUMBER_EXPONENT;
-					strAddChar(attr, (char) c);
+					str_add_char(str, (char) c);
 				}
 				else
 				{
@@ -201,7 +207,7 @@ int get_next_token(string *attr)
 				if (isdigit(c))
 				{
 					state = STATE_NUMBER_DOUBLE;
-					strAddChar(attr, (char) c);
+					str_add_char(str, (char) c);
 				}
 				else return SCANNER_ERROR;
 				break;
@@ -209,12 +215,12 @@ int get_next_token(string *attr)
 			case (STATE_NUMBER_DOUBLE):
 				if (isdigit(c))
 				{
-					strAddChar(attr, (char)c);
+					str_add_char(str, (char) c);
 				}
 				else if (tolower(c) == 101) //e
 				{
 					state = STATE_NUMBER_EXPONENT;
-					strAddChar(attr, (char) c);
+					str_add_char(str, (char) c);
 				}
 				else
 				{
@@ -227,12 +233,12 @@ int get_next_token(string *attr)
 				if (isdigit(c))
 				{
 					state = STATE_NUMBER_EXPONENT_FINAL;
-					strAddChar(attr, (char) c);
+					str_add_char(str, (char) c);
 				}
 				else if (c == 43 || c == 45) // + -
 				{
 					state = STATE_NUMBER_EXPONENT_SIGN;
-					strAddChar(attr, (char) c);
+					str_add_char(str, (char) c);
 				}
 				else return SCANNER_ERROR;
 				break;
@@ -241,7 +247,7 @@ int get_next_token(string *attr)
 				if (isdigit(c))
 				{
 					state = STATE_NUMBER_EXPONENT_FINAL;
-					strAddChar(attr, (char) c);
+					str_add_char(str, (char) c);
 				}
 				else return SCANNER_ERROR;
 				break;
@@ -249,15 +255,34 @@ int get_next_token(string *attr)
 			case (STATE_NUMBER_EXPONENT_FINAL):
 				if (isdigit(c))
 				{
-					strAddChar(attr, (char) c);
+					str_add_char(str, (char) c);
 				}
 				else
 				{
 					ungetc(c, source_file);
+					char *endptr;
 					if (is_double_number)
-						return DOUBLE_NUMBER;
+					{
+						double val = strtod(str->str, &endptr);
+						if (*endptr)
+						{
+							token.type = SCANNER_ERROR;
+						}
+						token.attr.decimal_val = val;
+						token.type = DOUBLE_NUMBER;
+					}
 					else
-						return INT_NUMBER;
+					{
+						int val = (int) strtol(str->str, &endptr, 10);
+						if (*endptr)
+						{
+							token.type = SCANNER_ERROR;
+						}
+						token.attr.int_val = val;
+						token.type = INT_NUMBER;
+					}
+
+					return token;
 				}
 				break;
 
@@ -272,12 +297,12 @@ int get_next_token(string *attr)
 					return SCANNER_ERROR;
 				else if (c == 34) // "
 				{
-					strAddChar(attr, (char) c);
+					str_add_char(str, (char) c);
 					return STRING;
 				}
 				else
 				{
-					strAddChar(attr, (char) c);
+					str_add_char(str, (char) c);
 				}
 				break;
 
@@ -298,12 +323,9 @@ int get_next_token(string *attr)
 				else
 				{
 					ungetc(c, source_file);
-					return MTN;
+					token.type = MTN;
+					return token;
 				}
 		}
 	}
-}
-
-int main() {
-	return 0;
 }
