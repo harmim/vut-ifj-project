@@ -434,8 +434,8 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				{
 					if (
 						!dynamic_string_add_char(str, c)
-							|| dynamic_string_init(token->attribute.str)
-							|| dynamic_string_copy(str, token->attribute.str)
+							|| !dynamic_string_init(token->attribute.str)
+							|| !dynamic_string_copy(str, token->attribute.str)
 						)
 					{
 						return SCANNER_ERROR_INTERNAL;
