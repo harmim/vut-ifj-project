@@ -20,22 +20,22 @@
 
 
 // Scanner states.
-#define SCANNER_STATE_START 200
-#define SCANNER_STATE_COMMENTARY 201
-#define SCANNER_STATE_BACKSLASH 202
-#define SCANNER_STATE_BLOCK_COMMENTARY 203
-#define SCANNER_STATE_BLOCK_COMMENTARY_LEAVE 204
-#define SCANNER_STATE_IDENTIFIER_OR_KEYWORD 205
-#define SCANNER_STATE_NUMBER 206
-#define SCANNER_STATE_NUMBER_POINT 207
-#define SCANNER_STATE_STATE_NUMBER_DOUBLE 208
-#define SCANNER_STATE_NUMBER_EXPONENT 209
-#define SCANNER_STATE_NUMBER_EXPONENT_SIGN 210
-#define SCANNER_STATE_NUMBER_EXPONENT_FINAL 211
-#define SCANNER_STATE_STRING_START 212
-#define SCANNER_STATE_STRING 213
-#define SCANNER_STATE_LESS_THAN 214
-#define SCANNER_STATE_MORE_THAN 215
+#define SCANNER_STATE_START 200 /// Starting state every new token processing starts here and initializes other states
+#define SCANNER_STATE_COMMENTARY 201 /// Line commentary, ignores every symbol, ends with EOL
+#define SCANNER_STATE_BACKSLASH 202 /// Operator / OR start of block comment - next symbol must be '
+#define SCANNER_STATE_BLOCK_COMMENTARY 203 /// Starts with /' and ignores every symbol except ' - this might be the end of block comment
+#define SCANNER_STATE_BLOCK_COMMENTARY_LEAVE 204 /// Ends with '/ the ' is read, if the next symbol is /, leave, else if ', stay, else go back to state before
+#define SCANNER_STATE_IDENTIFIER_OR_KEYWORD 205 /// Starts with letter or _, if next symbols are alphanumeric or _, add them to string, which is later compared with reserved words | Returns either keyword or string as ID
+#define SCANNER_STATE_NUMBER 206 /// Start of number processing, accepts numbers, e/E and . | Can return integer number
+#define SCANNER_STATE_NUMBER_POINT 207 /// If symbol was ., the number has type double
+#define SCANNER_STATE_NUMBER_DOUBLE 208 /// The last symbol was number | Can return double number
+#define SCANNER_STATE_NUMBER_EXPONENT 209 /// The last symbol was e or E, the number has type double, continues with optional symbols +/- or number
+#define SCANNER_STATE_NUMBER_EXPONENT_SIGN 210 /// Optional symbol was read, continue with numbers only
+#define SCANNER_STATE_NUMBER_EXPONENT_FINAL 211 /// Returns double number with exponent
+#define SCANNER_STATE_STRING_START 212 /// String starts with !" else returns error
+#define SCANNER_STATE_STRING 213 /// Sequence !" was read, ends with ", if ASCII value is lower than 32, returns error, these symbols can be written using escape sequence | Returns string
+#define SCANNER_STATE_LESS_THAN 214 /// Starts with < | Returns <>, <= or <
+#define SCANNER_STATE_MORE_THAN 215 /// Starts with > | Returns > or >=
 
 
 /**
@@ -80,38 +80,37 @@ enum keyword
 };
 
 /**
- * TODO: Comment each token type.
  * @enum Type of token.
  */
 enum token_type
 {
-	TOKEN_TYPE_EOF,
-	TOKEN_TYPE_EMPTY,
-	TOKEN_TYPE_IDENTIFIER,
-	TOKEN_TYPE_KEYWORD,
+	TOKEN_TYPE_EOF, /// End of file
+	TOKEN_TYPE_EMPTY, /// Empty
+	TOKEN_TYPE_IDENTIFIER, /// Identifier
+	TOKEN_TYPE_KEYWORD, /// Keyword
 
-	TOKEN_TYPE_INT_NUMBER,
-	TOKEN_TYPE_DOUBLE_NUMBER,
-	TOKEN_TYPE_STRING,
+	TOKEN_TYPE_INT_NUMBER, /// Integer number
+	TOKEN_TYPE_DOUBLE_NUMBER, /// Double number
+	TOKEN_TYPE_STRING, /// String
 
-	TOKEN_TYPE_NEQ,
-	TOKEN_TYPE_LEQ,
-	TOKEN_TYPE_LTN,
-	TOKEN_TYPE_MEQ,
-	TOKEN_TYPE_MTN,
+	TOKEN_TYPE_NEQ, /// Not equal <>
+	TOKEN_TYPE_LEQ, /// Less or equal <=
+	TOKEN_TYPE_LTN, /// Less than <
+	TOKEN_TYPE_MEQ, /// More or equal >=
+	TOKEN_TYPE_MTN, /// More than >
 
 	// operators
-	TOKEN_TYPE_ASSIGN,
-	TOKEN_TYPE_PLUS,
-	TOKEN_TYPE_MINUS,
-	TOKEN_TYPE_MUL,
-	TOKEN_TYPE_DIV,
-	TOKEN_TYPE_IDIV,
+	TOKEN_TYPE_ASSIGN, /// Assign =
+	TOKEN_TYPE_PLUS, /// Plus +
+	TOKEN_TYPE_MINUS, /// Minus -
+	TOKEN_TYPE_MUL, /// Multiplication *
+	TOKEN_TYPE_DIV, /// Division / result always double
+	TOKEN_TYPE_IDIV, /// Integer division \ only works with integers
 
-	TOKEN_TYPE_LEFT_BRACKET,
-	TOKEN_TYPE_RIGHT_BRACKET,
-	TOKEN_TYPE_RIGHT_COMMA,
-	TOKEN_TYPE_SEMICOLEN,
+	TOKEN_TYPE_LEFT_BRACKET, /// Left bracket (
+	TOKEN_TYPE_RIGHT_BRACKET, /// Right bracket )
+	TOKEN_TYPE_COMMA, /// Comma ,
+	TOKEN_TYPE_SEMICOLON, /// Semicolon ;
 };
 
 /**

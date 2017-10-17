@@ -14,7 +14,12 @@
 
 #include "scanner.h"
 
-
+/**
+ *
+ * @param str String which is being compared.
+ * @param token Token
+ * @return
+ */
 static int process_identifier(struct dynamic_string *str, struct token *token)
 {
 	if (!dynamic_string_cmp_const_str(str, "and")) token->attribute.keyword = KEYWORD_AND;
@@ -37,7 +42,7 @@ static int process_identifier(struct dynamic_string *str, struct token *token)
 	else if (!dynamic_string_cmp_const_str(str, "if")) token->attribute.keyword = KEYWORD_IF;
 	else if (!dynamic_string_cmp_const_str(str, "input")) token->attribute.keyword = KEYWORD_INPUT;
 	else if (!dynamic_string_cmp_const_str(str, "integer")) token->attribute.keyword = KEYWORD_INTEGER;
-	else if (!dynamic_string_cmp_const_str(str, "lenght")) token->attribute.keyword = KEYWORD_LENGTH;
+	else if (!dynamic_string_cmp_const_str(str, "length")) token->attribute.keyword = KEYWORD_LENGTH;
 	else if (!dynamic_string_cmp_const_str(str, "loop")) token->attribute.keyword = KEYWORD_LOOP;
 	else if (!dynamic_string_cmp_const_str(str, "next")) token->attribute.keyword = KEYWORD_NEXT;
 	else if (!dynamic_string_cmp_const_str(str, "not")) token->attribute.keyword = KEYWORD_NOT;
@@ -71,7 +76,6 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 	token->type = TOKEN_TYPE_EMPTY;
 	dynamic_string_clear(str);
 
-	bool is_double_number = false; // flag
 	char c, *endptr;
 
 	while (true)
@@ -93,7 +97,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				{
 					state = SCANNER_STATE_BACKSLASH;
 				}
-				else if (isalpha(c))
+				else if (isalpha(c) || c == '_')
 				{
 					if (!dynamic_string_add_char(str, c))
 					{
@@ -162,12 +166,12 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				}
 				else if (c == ',')
 				{
-					token->type = TOKEN_TYPE_RIGHT_COMMA;
+					token->type = TOKEN_TYPE_COMMA;
 					return SCANNER_TOKEN_OK;
 				}
 				else if (c == ';')
 				{
-					token->type = TOKEN_TYPE_SEMICOLEN;
+					token->type = TOKEN_TYPE_SEMICOLON;
 					return SCANNER_TOKEN_OK;
 				}
 				else if (c == EOF)
@@ -224,6 +228,10 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				{
 					state = SCANNER_STATE_START;
 				}
+				else if (c == '\'')
+				{
+					state = SCANNER_STATE_BLOCK_COMMENTARY_LEAVE;
+				}
 				else
 				{
 					state = SCANNER_STATE_BLOCK_COMMENTARY;
@@ -262,7 +270,6 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					{
 						return SCANNER_ERROR_INTERNAL;
 					}
-					is_double_number = true;
 				}
 				else if (c == 'e')
 				{
@@ -291,7 +298,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 			case (SCANNER_STATE_NUMBER_POINT):
 				if (isdigit(c))
 				{
-					state = SCANNER_STATE_STATE_NUMBER_DOUBLE;
+					state = SCANNER_STATE_NUMBER_DOUBLE;
 					if (!dynamic_string_add_char(str, c))
 					{
 						return SCANNER_ERROR_INTERNAL;
@@ -304,7 +311,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 
 				break;
 
-			case (SCANNER_STATE_STATE_NUMBER_DOUBLE):
+			case (SCANNER_STATE_NUMBER_DOUBLE):
 				if (isdigit(c))
 				{
 					if (!dynamic_string_add_char(str, c))
@@ -345,7 +352,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 						return SCANNER_ERROR_INTERNAL;
 					}
 				}
-				else if (c == '+' || c == '-') // + -
+				else if (c == '+' || c == '-')
 				{
 					state = SCANNER_STATE_NUMBER_EXPONENT_SIGN;
 					if (!dynamic_string_add_char(str, c))
@@ -387,26 +394,14 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				else
 				{
 					ungetc(c, source_file);
-					if (is_double_number)
-					{
-						double val = strtod(str->str, &endptr);
-						if (*endptr)
-						{
-							return SCANNER_ERROR_INTERNAL;
-						}
-						token->attribute.decimal = val;
-						token->type = TOKEN_TYPE_DOUBLE_NUMBER;
-					}
-					else
-					{
-						int val = (int) strtol(str->str, &endptr, 10);
-						if (*endptr)
-						{
-							return SCANNER_ERROR_INTERNAL;
-						}
-						token->attribute.integer = val;
-						token->type = TOKEN_TYPE_INT_NUMBER;
-					}
+                    double val = strtod(str->str, &endptr);
+                    if (*endptr)
+                    {
+                        return SCANNER_ERROR_INTERNAL;
+                    }
+
+                    token->attribute.decimal = val;
+                    token->type = TOKEN_TYPE_DOUBLE_NUMBER;
 
 					return SCANNER_TOKEN_OK;
 				}
@@ -416,6 +411,10 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 			case (SCANNER_STATE_STRING_START):
 				if (c == '"')
 				{
+                    if (!dynamic_string_add_char(str, c))
+                    {
+                        return SCANNER_ERROR_INTERNAL;
+                    }
 					state = SCANNER_STATE_STRING;
 				}
 				else
@@ -434,14 +433,15 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				{
 					if (
 						!dynamic_string_add_char(str, c)
-							|| !dynamic_string_init(token->attribute.str)
-							|| !dynamic_string_copy(str, token->attribute.str)
+							//|| !dynamic_string_init(token->attribute.str)
+							//|| !dynamic_string_copy(str, token->attribute.str)
 						)
 					{
 						return SCANNER_ERROR_INTERNAL;
 					}
 
 					token->type = TOKEN_TYPE_STRING;
+                    token->attribute.str = str;
 
 					return SCANNER_TOKEN_OK;
 				}
@@ -470,7 +470,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					token->type = TOKEN_TYPE_LTN;
 				}
 
-				return SCANNER_ERROR_LEX;
+				return SCANNER_TOKEN_OK;
 
 			case (SCANNER_STATE_MORE_THAN):
 				if (c == '=')
@@ -483,7 +483,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					token->type = TOKEN_TYPE_MTN;
 				}
 
-				return SCANNER_ERROR_LEX;
+				return SCANNER_TOKEN_OK;
 		}
 	}
 }

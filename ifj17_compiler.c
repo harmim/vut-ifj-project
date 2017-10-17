@@ -30,12 +30,13 @@ int main(int argc, char *argv[])
 	struct dynamic_string str;
 	if (!dynamic_string_init(&str))
 	{
-		return 99;
+		return SCANNER_ERROR_INTERNAL;
 	}
 	while (true)
 	{
 		struct token token;
 		int code = get_next_token(stdin, &token, &str); // scanner reads from standard input
+		printf("Token type is %d.\n",token.type); // pomocny vypis
 		if (code)
 		{
 			fprintf(stderr, "Scanner error!\n");
@@ -51,5 +52,5 @@ int main(int argc, char *argv[])
 	dynamic_string_free(&str);
 
 
-	return EXIT_SUCCESS; // compilation was seccessful
+	return EXIT_SUCCESS; // compilation was successful
 }
