@@ -34,8 +34,14 @@
 #define SCANNER_STATE_NUMBER_EXPONENT_FINAL 211 /// Returns double number with exponent
 #define SCANNER_STATE_STRING_START 212 /// String starts with !" else returns error
 #define SCANNER_STATE_STRING 213 /// Sequence !" was read, ends with ", if ASCII value is lower than 32, returns error, these symbols can be written using escape sequence | Returns string
-#define SCANNER_STATE_LESS_THAN 214 /// Starts with < | Returns <>, <= or <
-#define SCANNER_STATE_MORE_THAN 215 /// Starts with > | Returns > or >=
+#define SCANNER_STATE_STRING_ESCAPE 214 /// If symbol \ was loaded, can replace char with escape sequence symbols
+#define SCANNER_STATE_STRING_ESCAPE_ZEROONE 215 /// 0 or 1 was loaded, accepts only digits
+#define SCANNER_STATE_STRING_ESCAPE_ZEROONE_ZERONINE 216 /// first 0 or 1 then 0 to 9 was loaded, accepts only digits, returns symbol with ASCII value
+#define SCANNER_STATE_STRING_ESCAPE_TWO 217 /// 2 was loaded, accepts only 0 to 5 digits
+#define SCANNER_STATE_STRING_ESCAPE_TWO_ZEROFOUR 218 /// first 2 then 0 to 9 was loaded, accepts only digits, returns symbol with ASCII value
+#define SCANNER_STATE_STRING_ESCAPE_TWO_FIVE 219 /// first 2 then 5 was loaded, accepts only 0 to 5 digits, returns symbol with ASCII value
+#define SCANNER_STATE_LESS_THAN 220 /// Starts with < | Returns <>, <= or <
+#define SCANNER_STATE_MORE_THAN 221 /// Starts with > | Returns > or >=
 
 
 /**

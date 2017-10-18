@@ -76,7 +76,8 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 	token->type = TOKEN_TYPE_EMPTY;
 	dynamic_string_clear(str);
 
-	char c, *endptr;
+	char c, *endptr, strnum[4];
+	strnum[3] = '\0';
 
 	while (true)
 	{
@@ -115,10 +116,6 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				}
 				else if (c == '!')
 				{
-					if (!dynamic_string_add_char(str, c))
-					{
-						return SCANNER_ERROR_INTERNAL;
-					}
 					state = SCANNER_STATE_STRING_START;
 				}
 				else if (c == '<')
@@ -394,14 +391,14 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				else
 				{
 					ungetc(c, source_file);
-                    double val = strtod(str->str, &endptr);
-                    if (*endptr)
-                    {
-                        return SCANNER_ERROR_INTERNAL;
-                    }
+					double val = strtod(str->str, &endptr);
+					if (*endptr)
+					{
+						return SCANNER_ERROR_INTERNAL;
+					}
 
-                    token->attribute.decimal = val;
-                    token->type = TOKEN_TYPE_DOUBLE_NUMBER;
+					token->attribute.decimal = val;
+					token->type = TOKEN_TYPE_DOUBLE_NUMBER;
 
 					return SCANNER_TOKEN_OK;
 				}
@@ -411,10 +408,6 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 			case (SCANNER_STATE_STRING_START):
 				if (c == '"')
 				{
-                    if (!dynamic_string_add_char(str, c))
-                    {
-                        return SCANNER_ERROR_INTERNAL;
-                    }
 					state = SCANNER_STATE_STRING;
 				}
 				else
@@ -425,23 +418,27 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				break;
 
 			case (SCANNER_STATE_STRING):
-				if (c <= 31) // lower ASCII can be written by using escape sequence
+				if (c < 32 || c > 255)
 				{
 					return SCANNER_ERROR_LEX;
 				}
+				else if (c == '\\')
+				{
+					state = SCANNER_STATE_STRING_ESCAPE;
+				}
 				else if (c == '"')
 				{
-					if (
-						!dynamic_string_add_char(str, c)
+					//if (
+						 //!dynamic_string_add_char(str, c)
 							//|| !dynamic_string_init(token->attribute.str)
 							//|| !dynamic_string_copy(str, token->attribute.str)
-						)
-					{
-						return SCANNER_ERROR_INTERNAL;
-					}
+					//	)
+					//{
+					//	return SCANNER_ERROR_INTERNAL;
+					//}
 
 					token->type = TOKEN_TYPE_STRING;
-                    token->attribute.str = str;
+					token->attribute.str = str;
 
 					return SCANNER_TOKEN_OK;
 				}
@@ -451,6 +448,171 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					{
 						return SCANNER_ERROR_INTERNAL;
 					}
+				}
+
+				break;
+
+			case (SCANNER_STATE_STRING_ESCAPE):
+				if (c < 32 || c > 255)
+				{
+					return SCANNER_ERROR_LEX;
+				}
+				else if (c == 'n')
+				{
+					c = '\n';
+					if (!dynamic_string_add_char(str, c))
+					{
+						return SCANNER_ERROR_INTERNAL;
+					}
+					state = SCANNER_STATE_STRING;
+				}
+				else if (c == '"')
+				{
+					c = '"';
+					if (!dynamic_string_add_char(str, c))
+					{
+						return SCANNER_ERROR_INTERNAL;
+					}
+					state = SCANNER_STATE_STRING;
+				}
+				else if (c == 't')
+				{
+					c = '\t';
+					if (!dynamic_string_add_char(str, c))
+					{
+						return SCANNER_ERROR_INTERNAL;
+					}
+					state = SCANNER_STATE_STRING;
+				}
+				else if (c == '\\')
+				{
+					c = '\\';
+					if (!dynamic_string_add_char(str, c))
+					{
+						return SCANNER_ERROR_INTERNAL;
+					}
+					state = SCANNER_STATE_STRING;
+				}
+				else if (c == '0' || c == '1')
+				{
+					strnum[0] = c;
+					state = SCANNER_STATE_STRING_ESCAPE_ZEROONE;
+				}
+				else if (c == '2')
+				{
+					strnum[0] = c;
+					state = SCANNER_STATE_STRING_ESCAPE_TWO;
+				}
+				else
+				{
+					return SCANNER_ERROR_LEX;
+				}
+
+				break;
+
+			case (SCANNER_STATE_STRING_ESCAPE_ZEROONE):
+				if (isdigit(c))
+				{
+					strnum[1] = c;
+					state = SCANNER_STATE_STRING_ESCAPE_ZEROONE_ZERONINE;
+				}
+				else
+				{
+					return SCANNER_ERROR_LEX;
+				}
+
+				break;
+
+			case (SCANNER_STATE_STRING_ESCAPE_ZEROONE_ZERONINE):
+				if (isdigit(c))
+				{
+					strnum[2] = c;
+					state = SCANNER_STATE_STRING;
+					int val = (int) strtol(strnum, &endptr, 10);
+					if (*endptr)
+					{
+						return SCANNER_ERROR_INTERNAL;
+					}
+					c = (char) val;
+					if (!dynamic_string_add_char(str, c))
+					{
+						return SCANNER_ERROR_INTERNAL;
+					}
+				}
+				else
+				{
+					return SCANNER_ERROR_LEX;
+				}
+
+				break;
+
+			case (SCANNER_STATE_STRING_ESCAPE_TWO):
+				if (isdigit(c))
+				{
+					if (c == '0' || c == '1' || c == '2' || c == '3' || c == '4')
+					{
+						strnum[1] = c;
+						state = SCANNER_STATE_STRING_ESCAPE_TWO_ZEROFOUR;
+					}
+					else if (c == '5')
+					{
+						strnum[1] = c;
+						state = SCANNER_STATE_STRING_ESCAPE_TWO_FIVE;
+					}
+					else
+					{
+						return SCANNER_ERROR_LEX;
+					}
+				}
+				else
+				{
+					return SCANNER_ERROR_LEX;
+				}
+
+				break;
+
+			case (SCANNER_STATE_STRING_ESCAPE_TWO_ZEROFOUR):
+				if (isdigit(c))
+				{
+					strnum[2] = c;
+					state = SCANNER_STATE_STRING;
+					int val = (int) strtol(strnum, &endptr, 10);
+					if (*endptr)
+					{
+						return SCANNER_ERROR_INTERNAL;
+					}
+					c = (char) val;
+					if (!dynamic_string_add_char(str, c))
+					{
+						return SCANNER_ERROR_INTERNAL;
+					}
+				}
+				else
+				{
+					return  SCANNER_ERROR_LEX;
+				}
+
+				break;
+
+			case (SCANNER_STATE_STRING_ESCAPE_TWO_FIVE):
+				if (c == '0' || c == '1' || c == '2' || c == '3' || c == '4' || c == '5')
+				{
+					strnum[2] = c;
+					state = SCANNER_STATE_STRING;
+					int val = (int) strtol(strnum, &endptr, 10);
+					if (*endptr)
+					{
+						return SCANNER_ERROR_INTERNAL;
+					}
+					c = (char) val;
+					if (!dynamic_string_add_char(str, c))
+					{
+						return SCANNER_ERROR_INTERNAL;
+					}
+				}
+				else
+				{
+					return SCANNER_ERROR_LEX;
 				}
 
 				break;
