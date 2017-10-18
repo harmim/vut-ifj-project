@@ -17,8 +17,8 @@
 /**
  *
  * @param str String which is being compared.
- * @param token Token
- * @return
+ * @param token Token whose attribute keyword is being compared.
+ * @return Integer which represents the keyword ID.
  */
 static int process_identifier(struct dynamic_string *str, struct token *token)
 {
@@ -81,7 +81,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 
 	while (true)
 	{
-		c = (char) tolower(getc(source_file));
+		c = (char) getc(source_file);
 
 		switch (state)
 		{
@@ -100,7 +100,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				}
 				else if (isalpha(c) || c == '_')
 				{
-					if (!dynamic_string_add_char(str, c))
+					if (!dynamic_string_add_char(str, tolower(c)))
 					{
 						return SCANNER_ERROR_INTERNAL;
 					}
@@ -239,7 +239,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 			case (SCANNER_STATE_IDENTIFIER_OR_KEYWORD):
 				if (isalnum(c) || c == '_')
 				{
-					if (!dynamic_string_add_char(str, c))
+					if (!dynamic_string_add_char(str, tolower(c)))
 					{
 						return SCANNER_ERROR_INTERNAL;
 					}
@@ -268,7 +268,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 						return SCANNER_ERROR_INTERNAL;
 					}
 				}
-				else if (c == 'e')
+				else if (tolower(c) == 'e')
 				{
 					state = SCANNER_STATE_NUMBER_EXPONENT;
 					if (!dynamic_string_add_char(str, c))
@@ -316,7 +316,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 						return SCANNER_ERROR_INTERNAL;
 					}
 				}
-				else if (c == 'e')
+				else if (tolower(c) == 'e')
 				{
 					state = SCANNER_STATE_NUMBER_EXPONENT;
 					if (!dynamic_string_add_char(str, c))

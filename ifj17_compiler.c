@@ -22,56 +22,52 @@
  */
 int main(int argc, char *argv[])
 {
-    (void) argc;
-    (void) argv;
+	(void) argc;
+	(void) argv;
 
-    // FIXME: This is only for scanner (get_next_token function) testing.
-    // Example usage of scanner.
-    struct dynamic_string str;
-    if (!dynamic_string_init(&str))
-    {
-        return SCANNER_ERROR_INTERNAL;
-    }
-    while (true)
-    {
-        struct token token;
-        int code = get_next_token(stdin, &token, &str); // scanner reads from standard input
-        printf("Token type is %d.\n",token.type); // pomocny vypis
-    /*	if (token.type == 2)//identif
-        {
-            printf("Token identif is %s.\n",token.attribute.str->str);
-        }
+	// FIXME: This is only for scanner (get_next_token function) testing.
+	// Example usage of scanner.
+	struct dynamic_string str;
+	if (!dynamic_string_init(&str))
+	{
+		return SCANNER_ERROR_INTERNAL;
+	}
+	while (true)
+	{
+		struct token token;
+		int code = get_next_token(stdin, &token, &str); // scanner reads from standard input
+		printf("Token type is %d.\n",token.type); // pomocny vypis
 		if (token.type == 3)//kw
-        {
-            printf("Token keyword is %d.\n",token.attribute.keyword);
-        }
-        else if (token.type == 4)//int
-        {
-            printf("Token int is %d.\n",token.attribute.integer);
-        }
-        else if (token.type == 5)//double
-        {
-            printf("Token double is %f.\n",token.attribute.decimal);
-        }
-        else if (token.type == 6)//string
-        {
-            printf("Token string is %s.\n",token.attribute.str->str);
-        }
-*/
-        if (code)
-        {
-            fprintf(stderr, "Scanner error!\n");
+		{
+			printf("Token keyword is %d.\n",token.attribute.keyword);
+		}
+		else if (token.type == 4)//int
+		{
+			printf("Token int is %d.\n",token.attribute.integer);
+		}
+		else if (token.type == 5)//double
+		{
+			printf("Token double is %f.\n",token.attribute.decimal);
+		}
+		else if (token.type == 6)//string
+		{
+			printf("Token string is %s.\n",token.attribute.str->str);
+		}
 
-            return code; // scanner error occurred
-        }
+		if (code)
+		{
+			fprintf(stderr, "Scanner error!\n");
 
-        if (token.type == TOKEN_TYPE_EOF)
-        {
-            break;
-        }
-    }
-    dynamic_string_free(&str);
+			return code; // scanner error occurred
+		}
+
+		if (token.type == TOKEN_TYPE_EOF)
+		{
+			break;
+		}
+	}
+	dynamic_string_free(&str);
 
 
-    return EXIT_SUCCESS; // compilation was successful
+	return EXIT_SUCCESS; // compilation was successful
 }
