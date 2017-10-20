@@ -68,6 +68,7 @@ static int process_identifier(struct dynamic_string *str, struct token *token)
 	else if (!dynamic_string_cmp_const_str(str, "return")) token->attribute.keyword = KEYWORD_RETURN;
 	else if (!dynamic_string_cmp_const_str(str, "scope")) token->attribute.keyword = KEYWORD_SCOPE;
 	else if (!dynamic_string_cmp_const_str(str, "shared")) token->attribute.keyword = KEYWORD_SHARED;
+	else if (!dynamic_string_cmp_const_str(str, "string")) token->attribute.keyword = KEYWORD_STRING;
 	else if (!dynamic_string_cmp_const_str(str, "static")) token->attribute.keyword = KEYWORD_STATIC;
 	else if (!dynamic_string_cmp_const_str(str, "substr")) token->attribute.keyword = KEYWORD_SUBSTR;
 	else if (!dynamic_string_cmp_const_str(str, "then")) token->attribute.keyword = KEYWORD_THEN;
