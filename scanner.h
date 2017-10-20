@@ -10,6 +10,7 @@
 #ifndef _SCANNER_H
 #define _SCANNER_H
 
+
 #include <stdbool.h>
 
 #include "dynamic_string.h"
