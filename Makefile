@@ -22,7 +22,7 @@ pack: clean $(PACK).tgz
 
 
 $(PACK).tgz:
-	tar -czf $@ *.h *.c Makefile
+	tar -czf $@ *.h *.c Makefile rozdeleni
 
 
 .PHONY: clean
