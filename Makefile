@@ -3,7 +3,7 @@
 PACK = xharmi00
 
 CC = gcc
-CFLAGS = -std=c99 -Wall -Wextra -Werror -pedantic
+CFLAGS = -std=c99 -Wall -Wextra -Werror
 
 EXECUTABLE = ifj17_compiler
 SRCS = *.c
@@ -27,7 +27,7 @@ $(PACK).tgz:
 
 .PHONY: clean
 clean:
-	rm -rf $(EXECUTABLE) *.o *.out *.dSYM/ $(PACK) $(DEPDIR)
+	rm -rf $(EXECUTABLE) *.o *.out *.dSYM/ $(PACK).tgz $(DEPDIR)
 
 
 # #################### Auto-Dependency Generation #####################

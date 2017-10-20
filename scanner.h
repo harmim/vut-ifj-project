@@ -10,6 +10,8 @@
 #ifndef _SCANNER_H
 #define _SCANNER_H
 
+#include <stdbool.h>
+
 #include "dynamic_string.h"
 
 
@@ -124,12 +126,10 @@ enum token_type
  */
 union token_attribute
 {
+	struct dynamic_string *string; /// String or identifier value.
 	int integer; /// Integer value.
 	enum keyword keyword; /// Keyword, one of the KEYWORD_... constant
 	double decimal; /// Decimal value.
-	// FIXME: not char *, but pointer to table of symbols
-	char *identifier; /// Pointer to table of symbols in case of identifier.
-	struct dynamic_string *str; /// String value.
 };
 
 /**
@@ -147,10 +147,9 @@ struct token
  *
  * @param source_file Source file to be scanned.
  * @param token Pointer to output token.
- * @param str Dynamic string for lex processing.
  * @return 0 (SCANNER_TOKEN_OK) if token is OK, otherwise in case of lex error one of SCANNER_ERROR_... constant.
  */
-int get_next_token(FILE *source_file, struct token *token, struct dynamic_string *str);
+int get_next_token(FILE *source_file, struct token *token);
 
 
 #endif //_SCANNER_H

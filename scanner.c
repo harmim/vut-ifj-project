@@ -14,11 +14,28 @@
 
 #include "scanner.h"
 
+
 /**
+ * Free resources and returns exit code.
  *
- * @param str String which is being compared.
- * @param token Token whose attribute keyword is being compared.
- * @return Integer which represents the keyword ID.
+ * @param exit_code Exit code.
+ * @param str Dynamic string to be freed.
+ * @return Given exit code.
+ */
+static int free_resources(int exit_code, struct dynamic_string *str)
+{
+	dynamic_string_free(str);
+
+	return exit_code;
+}
+
+
+/**
+ * Processing identifier, checks if it is keyword.
+ *
+ * @param str Identifier which is being compared.
+ * @param token Pointer to output token.
+ * @return 0 (SCANNER_TOKEN_OK) if token is OK, otherwise in case of lex error one of SCANNER_ERROR_... constant.
  */
 static int process_identifier(struct dynamic_string *str, struct token *token)
 {
@@ -61,24 +78,80 @@ static int process_identifier(struct dynamic_string *str, struct token *token)
 	if (token->type != TOKEN_TYPE_IDENTIFIER)
 	{
 		token->type = TOKEN_TYPE_KEYWORD;
-		return SCANNER_TOKEN_OK;
+		return free_resources(SCANNER_TOKEN_OK, str);
 	}
 
-	// TODO: uložit do tabulky symbolů hodnout str a do tokenu do ptr uložit ukazatel na tuto hodnotu v tabulce symboů
+	if (!dynamic_string_copy(str, token->attribute.string))
+	{
+		return free_resources(SCANNER_ERROR_INTERNAL, str);
+	}
 
-	return SCANNER_TOKEN_OK;
+	return free_resources(SCANNER_TOKEN_OK, str);
 }
 
 
-int get_next_token(FILE *source_file, struct token *token, struct dynamic_string *str)
+/**
+ * Processing integer.
+ *
+ * @param str Integer which is being processed.
+ * @param token Pointer to output token.
+ * @return 0 (SCANNER_TOKEN_OK) if token is OK, otherwise in case of lex error one of SCANNER_ERROR_... constant.
+ */
+static int process_integer(struct dynamic_string *str, struct token *token)
 {
+	char *endptr;
+
+	int val = (int) strtol(str->str, &endptr, 10);
+	if (*endptr)
+	{
+		return free_resources(SCANNER_ERROR_INTERNAL, str);
+	}
+
+	token->attribute.integer = val;
+	token->type = TOKEN_TYPE_INT_NUMBER;
+
+	return free_resources(SCANNER_TOKEN_OK, str);
+}
+
+
+/**
+ * Processing decimal.
+ *
+ * @param str Decimal which is being processed.
+ * @param token Pointer to output token.
+ * @return 0 (SCANNER_TOKEN_OK) if token is OK, otherwise in case of lex error one of SCANNER_ERROR_... constant.
+ */
+static int process_decimal(struct dynamic_string *str, struct token *token)
+{
+	char *endptr;
+
+	double val = strtod(str->str, &endptr);
+	if (*endptr)
+	{
+		return free_resources(SCANNER_ERROR_INTERNAL, str);
+	}
+
+	token->attribute.decimal = val;
+	token->type = TOKEN_TYPE_DOUBLE_NUMBER;
+
+	return free_resources(SCANNER_TOKEN_OK, str);
+}
+
+
+int get_next_token(FILE *source_file, struct token *token)
+{
+	// inicialization
+	struct dynamic_string string;
+	struct dynamic_string *str = &string;
+	dynamic_string_init(str);
+
 	int state = SCANNER_STATE_START;
 	token->type = TOKEN_TYPE_EMPTY;
-	dynamic_string_clear(str);
 
-	char c, *endptr, strnum[4];
-	strnum[3] = '\0';
+	char c, *endptr, strnum[4] = {[0 ... 3] = '\0'};
 
+
+	// reading chars from source_file
 	while (true)
 	{
 		c = (char) getc(source_file);
@@ -100,9 +173,9 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				}
 				else if (isalpha(c) || c == '_')
 				{
-					if (!dynamic_string_add_char(str, tolower(c)))
+					if (!dynamic_string_add_char(str, (char) tolower(c)))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 					state = SCANNER_STATE_IDENTIFIER_OR_KEYWORD;
 				}
@@ -110,7 +183,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				{
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 					state = SCANNER_STATE_NUMBER;
 				}
@@ -129,56 +202,56 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				else if (c == '=')
 				{
 					token->type = TOKEN_TYPE_ASSIGN;
-					return SCANNER_TOKEN_OK;
+					return free_resources(SCANNER_TOKEN_OK, str);
 				}
 				else if (c == '+')
 				{
 					token->type = TOKEN_TYPE_PLUS;
-					return SCANNER_TOKEN_OK;
+					return free_resources(SCANNER_TOKEN_OK, str);
 				}
 				else if (c == '-')
 				{
 					token->type = TOKEN_TYPE_MINUS;
-					return SCANNER_TOKEN_OK;
+					return free_resources(SCANNER_TOKEN_OK, str);
 				}
 				else if (c == '*')
 				{
 					token->type = TOKEN_TYPE_MUL;
-					return SCANNER_TOKEN_OK;
+					return free_resources(SCANNER_TOKEN_OK, str);
 				}
 				else if (c == '\\')
 				{
 					token->type = TOKEN_TYPE_IDIV;
-					return SCANNER_TOKEN_OK;
+					return free_resources(SCANNER_TOKEN_OK, str);
 				}
 				else if (c == '(')
 				{
 					token->type = TOKEN_TYPE_LEFT_BRACKET;
-					return SCANNER_TOKEN_OK;
+					return free_resources(SCANNER_TOKEN_OK, str);
 				}
 				else if (c == ')')
 				{
 					token->type = TOKEN_TYPE_RIGHT_BRACKET;
-					return SCANNER_TOKEN_OK;
+					return free_resources(SCANNER_TOKEN_OK, str);
 				}
 				else if (c == ',')
 				{
 					token->type = TOKEN_TYPE_COMMA;
-					return SCANNER_TOKEN_OK;
+					return free_resources(SCANNER_TOKEN_OK, str);
 				}
 				else if (c == ';')
 				{
 					token->type = TOKEN_TYPE_SEMICOLON;
-					return SCANNER_TOKEN_OK;
+					return free_resources(SCANNER_TOKEN_OK, str);
 				}
 				else if (c == EOF)
 				{
 					token->type = TOKEN_TYPE_EOF;
-					return SCANNER_TOKEN_OK;
+					return free_resources(SCANNER_TOKEN_OK, str);
 				}
 				else
 				{
-					return SCANNER_ERROR_LEX;
+					return free_resources(SCANNER_ERROR_LEX, str);
 				}
 
 				break;
@@ -199,7 +272,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				else
 				{
 					token->type = TOKEN_TYPE_DIV;
-					return SCANNER_TOKEN_OK;
+					return free_resources(SCANNER_TOKEN_OK, str);
 				}
 
 				break;
@@ -211,7 +284,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				}
 				else if (c == EOF)
 				{
-					return SCANNER_ERROR_LEX;
+					return free_resources(SCANNER_ERROR_LEX, str);
 				}
 
 				break;
@@ -219,7 +292,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 			case (SCANNER_STATE_BLOCK_COMMENTARY_LEAVE):
 				if (c == EOF)
 				{
-					return SCANNER_ERROR_LEX;
+					return free_resources(SCANNER_ERROR_LEX, str);
 				}
 				else if (c == '/')
 				{
@@ -239,9 +312,9 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 			case (SCANNER_STATE_IDENTIFIER_OR_KEYWORD):
 				if (isalnum(c) || c == '_')
 				{
-					if (!dynamic_string_add_char(str, tolower(c)))
+					if (!dynamic_string_add_char(str, (char) tolower(c)))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 				}
 				else
@@ -257,7 +330,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				{
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 				}
 				else if (c == '.')
@@ -265,7 +338,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					state = SCANNER_STATE_NUMBER_POINT;
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 				}
 				else if (tolower(c) == 'e')
@@ -273,21 +346,13 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					state = SCANNER_STATE_NUMBER_EXPONENT;
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 				}
 				else
 				{
 					ungetc(c, source_file);
-					int val = (int) strtol(str->str, &endptr, 10);
-					if (*endptr)
-					{
-						return SCANNER_ERROR_INTERNAL;
-					}
-					token->attribute.integer = val;
-					token->type = TOKEN_TYPE_INT_NUMBER;
-
-					return SCANNER_TOKEN_OK;
+					return process_integer(str, token);
 				}
 
 				break;
@@ -298,12 +363,12 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					state = SCANNER_STATE_NUMBER_DOUBLE;
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 				}
 				else
 				{
-					return SCANNER_ERROR_LEX;
+					return free_resources(SCANNER_ERROR_LEX, str);
 				}
 
 				break;
@@ -313,7 +378,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				{
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 				}
 				else if (tolower(c) == 'e')
@@ -321,21 +386,13 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					state = SCANNER_STATE_NUMBER_EXPONENT;
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 				}
 				else
 				{
 					ungetc(c, source_file);
-					double val = strtod(str->str, &endptr);
-					if (*endptr)
-					{
-						return SCANNER_ERROR_INTERNAL;
-					}
-					token->attribute.decimal = val;
-					token->type = TOKEN_TYPE_DOUBLE_NUMBER;
-
-					return SCANNER_TOKEN_OK;
+					return process_decimal(str, token);
 				}
 
 				break;
@@ -346,7 +403,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					state = SCANNER_STATE_NUMBER_EXPONENT_FINAL;
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 				}
 				else if (c == '+' || c == '-')
@@ -354,12 +411,12 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					state = SCANNER_STATE_NUMBER_EXPONENT_SIGN;
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 				}
 				else
 				{
-					return SCANNER_ERROR_LEX;
+					return free_resources(SCANNER_ERROR_LEX, str);
 				}
 
 				break;
@@ -370,12 +427,12 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					state = SCANNER_STATE_NUMBER_EXPONENT_FINAL;
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 				}
 				else
 				{
-					return SCANNER_ERROR_LEX;
+					return free_resources(SCANNER_ERROR_LEX, str);
 				}
 
 				break;
@@ -385,22 +442,13 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				{
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 				}
 				else
 				{
 					ungetc(c, source_file);
-					double val = strtod(str->str, &endptr);
-					if (*endptr)
-					{
-						return SCANNER_ERROR_INTERNAL;
-					}
-
-					token->attribute.decimal = val;
-					token->type = TOKEN_TYPE_DOUBLE_NUMBER;
-
-					return SCANNER_TOKEN_OK;
+					return process_decimal(str, token);
 				}
 
 				break;
@@ -412,15 +460,15 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				}
 				else
 				{
-					return SCANNER_ERROR_LEX;
+					return free_resources(SCANNER_ERROR_LEX, str);
 				}
 
 				break;
 
 			case (SCANNER_STATE_STRING):
-				if (c < 32 || c > 255)
+				if (c < 32)
 				{
-					return SCANNER_ERROR_LEX;
+					return free_resources(SCANNER_ERROR_LEX, str);
 				}
 				else if (c == '\\')
 				{
@@ -428,41 +476,35 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				}
 				else if (c == '"')
 				{
-					//if (
-						 //!dynamic_string_add_char(str, c)
-							//|| !dynamic_string_init(token->attribute.str)
-							//|| !dynamic_string_copy(str, token->attribute.str)
-					//	)
-					//{
-					//	return SCANNER_ERROR_INTERNAL;
-					//}
-
+					if (!dynamic_string_copy(str, token->attribute.string))
+					{
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
+					}
 					token->type = TOKEN_TYPE_STRING;
-					token->attribute.str = str;
 
-					return SCANNER_TOKEN_OK;
+					return free_resources(SCANNER_TOKEN_OK, str);
 				}
 				else
 				{
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 				}
 
 				break;
 
 			case (SCANNER_STATE_STRING_ESCAPE):
-				if (c < 32 || c > 255)
+				if (c < 32)
 				{
-					return SCANNER_ERROR_LEX;
+					return free_resources(SCANNER_ERROR_LEX, str);
 				}
 				else if (c == 'n')
 				{
 					c = '\n';
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 					state = SCANNER_STATE_STRING;
 				}
@@ -471,7 +513,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					c = '"';
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 					state = SCANNER_STATE_STRING;
 				}
@@ -480,7 +522,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					c = '\t';
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 					state = SCANNER_STATE_STRING;
 				}
@@ -489,7 +531,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					c = '\\';
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 					state = SCANNER_STATE_STRING;
 				}
@@ -505,7 +547,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				}
 				else
 				{
-					return SCANNER_ERROR_LEX;
+					return free_resources(SCANNER_ERROR_LEX, str);
 				}
 
 				break;
@@ -518,7 +560,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				}
 				else
 				{
-					return SCANNER_ERROR_LEX;
+					return free_resources(SCANNER_ERROR_LEX, str);
 				}
 
 				break;
@@ -528,20 +570,22 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				{
 					strnum[2] = c;
 					state = SCANNER_STATE_STRING;
+
 					int val = (int) strtol(strnum, &endptr, 10);
 					if (*endptr)
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
+
 					c = (char) val;
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 				}
 				else
 				{
-					return SCANNER_ERROR_LEX;
+					return free_resources(SCANNER_ERROR_LEX, str);
 				}
 
 				break;
@@ -561,12 +605,12 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					}
 					else
 					{
-						return SCANNER_ERROR_LEX;
+						return free_resources(SCANNER_ERROR_LEX, str);
 					}
 				}
 				else
 				{
-					return SCANNER_ERROR_LEX;
+					return free_resources(SCANNER_ERROR_LEX, str);
 				}
 
 				break;
@@ -576,20 +620,22 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				{
 					strnum[2] = c;
 					state = SCANNER_STATE_STRING;
+
 					int val = (int) strtol(strnum, &endptr, 10);
 					if (*endptr)
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
+
 					c = (char) val;
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 				}
 				else
 				{
-					return  SCANNER_ERROR_LEX;
+					return free_resources(SCANNER_ERROR_LEX, str);
 				}
 
 				break;
@@ -599,20 +645,22 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 				{
 					strnum[2] = c;
 					state = SCANNER_STATE_STRING;
+
 					int val = (int) strtol(strnum, &endptr, 10);
 					if (*endptr)
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
+
 					c = (char) val;
 					if (!dynamic_string_add_char(str, c))
 					{
-						return SCANNER_ERROR_INTERNAL;
+						return free_resources(SCANNER_ERROR_INTERNAL, str);
 					}
 				}
 				else
 				{
-					return SCANNER_ERROR_LEX;
+					return free_resources(SCANNER_ERROR_LEX, str);
 				}
 
 				break;
@@ -632,7 +680,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					token->type = TOKEN_TYPE_LTN;
 				}
 
-				return SCANNER_TOKEN_OK;
+				return free_resources(SCANNER_TOKEN_OK, str);
 
 			case (SCANNER_STATE_MORE_THAN):
 				if (c == '=')
@@ -645,7 +693,7 @@ int get_next_token(FILE *source_file, struct token *token, struct dynamic_string
 					token->type = TOKEN_TYPE_MTN;
 				}
 
-				return SCANNER_TOKEN_OK;
+				return free_resources(SCANNER_TOKEN_OK, str);
 		}
 	}
 }

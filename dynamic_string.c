@@ -21,13 +21,13 @@ void dynamic_string_clear(struct dynamic_string *s)
 
 bool dynamic_string_init(struct dynamic_string *s)
 {
-	if (!(s->str = (char *) malloc(STR_LEN_INC)))
+	if (!(s->str = (char *) malloc(DYNAMIC_STRING_LEN_INC)))
 	{
 		return false;
 	}
 
 	dynamic_string_clear(s);
-	s->alloc_size = STR_LEN_INC;
+	s->alloc_size = DYNAMIC_STRING_LEN_INC;
 
 	return true;
 }
@@ -43,7 +43,7 @@ bool dynamic_string_add_char(struct dynamic_string *s, char c)
 {
 	if (s->length + 1 >= s->alloc_size)
 	{
-		unsigned int new_size = s->length + STR_LEN_INC;
+		unsigned int new_size = s->length + DYNAMIC_STRING_LEN_INC;
 		if (!(s->str = (char *) realloc(s->str, new_size)))
 		{
 			return false;
@@ -66,18 +66,18 @@ int dynamic_string_cmp_const_str(struct dynamic_string *dynamic_string, char *co
 
 bool dynamic_string_copy(struct dynamic_string *src, struct dynamic_string *dest)
 {
-	unsigned int newLength = src->length;
-	if (newLength >= dest->alloc_size)
+	unsigned int new_length = src->length;
+	if (new_length >= dest->alloc_size)
 	{
-		if (!(dest->str = (char *) realloc(dest->str, newLength + 1)))
+		if (!(dest->str = (char *) realloc(dest->str, new_length + 1)))
 		{
 			return false;
 		}
-		dest->alloc_size = newLength + 1;
+		dest->alloc_size = new_length + 1;
 	}
 
 	strcpy(dest->str, src->str);
-	dest->length = newLength;
+	dest->length = new_length;
 
 	return true;
 }

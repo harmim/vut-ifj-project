@@ -13,7 +13,7 @@
 #include <stdbool.h>
 
 
-#define STR_LEN_INC 8 /// Inicialization lenght of string.
+#define DYNAMIC_STRING_LEN_INC 8 /// Inicialization lenght of string.
 
 
 /**
