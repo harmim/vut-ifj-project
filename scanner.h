@@ -45,6 +45,7 @@
 #define SCANNER_STATE_STRING_ESCAPE_TWO_FIVE 219 /// first 2 then 5 was loaded, accepts only 0 to 5 digits, returns symbol with ASCII value
 #define SCANNER_STATE_LESS_THAN 220 /// Starts with < | Returns <>, <= or <
 #define SCANNER_STATE_MORE_THAN 221 /// Starts with > | Returns > or >=
+#define SCANNER_STATE_EOL 222 /// End of line
 
 
 /**
@@ -95,6 +96,7 @@ enum keyword
 enum token_type
 {
 	TOKEN_TYPE_EOF, /// End of file
+	TOKEN_TYPE_EOL, /// End of line
 	TOKEN_TYPE_EMPTY, /// Empty
 	TOKEN_TYPE_IDENTIFIER, /// Identifier
 	TOKEN_TYPE_KEYWORD, /// Keyword

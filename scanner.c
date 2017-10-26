@@ -160,7 +160,11 @@ int get_next_token(FILE *source_file, struct token *token)
 		switch (state)
 		{
 			case (SCANNER_STATE_START):
-				if (isspace(c))
+				if (c == '\n')
+				{
+					state = SCANNER_STATE_EOL;
+				}
+				else if (isspace(c))
 				{
 					state = SCANNER_STATE_START;
 				}
@@ -694,6 +698,16 @@ int get_next_token(FILE *source_file, struct token *token)
 					token->type = TOKEN_TYPE_MTN;
 				}
 
+				return free_resources(SCANNER_TOKEN_OK, str);
+
+			case (SCANNER_STATE_EOL):
+				if (isspace(c))
+				{
+					break;
+				}
+
+				ungetc(c, source_file);
+				token->type = TOKEN_TYPE_EOL;
 				return free_resources(SCANNER_TOKEN_OK, str);
 		}
 	}
