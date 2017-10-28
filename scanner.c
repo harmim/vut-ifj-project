@@ -37,7 +37,7 @@ static int free_resources(int exit_code, struct dynamic_string *str)
  * @param token Pointer to output token.
  * @return 0 (SCANNER_TOKEN_OK) if token is OK, otherwise in case of lex error one of SCANNER_ERROR_... constant.
  */
-static int process_identifier(struct dynamic_string *str, struct token *token)
+static int process_identifier(struct dynamic_string *str, token *token)
 {
 	if (!dynamic_string_cmp_const_str(str, "and")) token->attribute.keyword = KEYWORD_AND;
 	else if (!dynamic_string_cmp_const_str(str, "as")) token->attribute.keyword = KEYWORD_AS;
@@ -98,7 +98,7 @@ static int process_identifier(struct dynamic_string *str, struct token *token)
  * @param token Pointer to output token.
  * @return 0 (SCANNER_TOKEN_OK) if token is OK, otherwise in case of lex error one of SCANNER_ERROR_... constant.
  */
-static int process_integer(struct dynamic_string *str, struct token *token)
+static int process_integer(struct dynamic_string *str, token *token)
 {
 	char *endptr;
 
@@ -122,7 +122,7 @@ static int process_integer(struct dynamic_string *str, struct token *token)
  * @param token Pointer to output token.
  * @return 0 (SCANNER_TOKEN_OK) if token is OK, otherwise in case of lex error one of SCANNER_ERROR_... constant.
  */
-static int process_decimal(struct dynamic_string *str, struct token *token)
+static int process_decimal(struct dynamic_string *str, token *token)
 {
 	char *endptr;
 
@@ -139,7 +139,7 @@ static int process_decimal(struct dynamic_string *str, struct token *token)
 }
 
 
-int get_next_token(FILE *source_file, struct token *token)
+int get_next_token(FILE *source_file, token *token)
 {
 	// inicialization
 	struct dynamic_string string;

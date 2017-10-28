@@ -139,11 +139,11 @@ union token_attribute
 /**
  * @struct Token representation.
  */
-struct token
+typedef struct token_t
 {
 	enum token_type type; /// Token type, one of token_type constants.
 	union token_attribute attribute; /// Attribute of token.
-};
+} token;
 
 
 /**
@@ -153,7 +153,7 @@ struct token
  * @param token Pointer to output token.
  * @return 0 (SCANNER_TOKEN_OK) if token is OK, otherwise in case of lex error one of SCANNER_ERROR_... constant.
  */
-int get_next_token(FILE *source_file, struct token *token);
+int get_next_token(FILE *source_file, token *token);
 
 
 #endif //_SCANNER_H
