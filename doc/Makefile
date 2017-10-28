@@ -15,11 +15,20 @@ $(DOC).ps: $(DOC).dvi
 
 $(DOC).dvi: $(DOC).tex
 	latex $<
+	make bibtex
 	latex $<
+	latex $<
+
+
+.PHONY: bibtex
+bibtex: $(DOC).bib
+	bibtex $(DOC)
 
 
 .PHONY: pdflatex
 pdflatex: $(DOC).tex
+	pdflatex $<
+	make bibtex
 	pdflatex $<
 	pdflatex $<
 
@@ -28,4 +37,4 @@ pdflatex: $(DOC).tex
 clean:
 	rm -f $(DOC).aux $(DOC).dvi $(DOC).log $(DOC).ps $(DOC).synctex.gz \
 		$(DOC).fls $(DOC).fdb_latexmk $(DOC).bbl $(DOC).blg $(DOC).out \
-		$(IMG_DIR)/*-eps-converted-to*
+		$(IMG_DIR)/*-eps-converted-to* $(DOC).toc
