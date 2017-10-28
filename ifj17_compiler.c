@@ -27,8 +27,8 @@ int main(void)
 	// Example usage of scanner.
 	while (true)
 	{
-		struct token token;
-		struct dynamic_string string;
+		Token token;
+		Dynamic_string string;
 		if (!dynamic_string_init(&string))
 		{
 			return ERROR_INTERNAL;

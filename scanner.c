@@ -22,7 +22,7 @@
  * @param str Dynamic string to be freed.
  * @return Given exit code.
  */
-static int free_resources(int exit_code, struct dynamic_string *str)
+static int free_resources(int exit_code, Dynamic_string *str)
 {
 	dynamic_string_free(str);
 
@@ -37,7 +37,7 @@ static int free_resources(int exit_code, struct dynamic_string *str)
  * @param token Pointer to output token.
  * @return 0 (SCANNER_TOKEN_OK) if token is OK, otherwise in case of lex error one of SCANNER_ERROR_... constant.
  */
-static int process_identifier(struct dynamic_string *str, token *token)
+static int process_identifier(Dynamic_string *str, Token *token)
 {
 	if (!dynamic_string_cmp_const_str(str, "and")) token->attribute.keyword = KEYWORD_AND;
 	else if (!dynamic_string_cmp_const_str(str, "as")) token->attribute.keyword = KEYWORD_AS;
@@ -98,7 +98,7 @@ static int process_identifier(struct dynamic_string *str, token *token)
  * @param token Pointer to output token.
  * @return 0 (SCANNER_TOKEN_OK) if token is OK, otherwise in case of lex error one of SCANNER_ERROR_... constant.
  */
-static int process_integer(struct dynamic_string *str, token *token)
+static int process_integer(Dynamic_string *str, Token *token)
 {
 	char *endptr;
 
@@ -122,7 +122,7 @@ static int process_integer(struct dynamic_string *str, token *token)
  * @param token Pointer to output token.
  * @return 0 (SCANNER_TOKEN_OK) if token is OK, otherwise in case of lex error one of SCANNER_ERROR_... constant.
  */
-static int process_decimal(struct dynamic_string *str, token *token)
+static int process_decimal(Dynamic_string *str, Token *token)
 {
 	char *endptr;
 
@@ -139,17 +139,17 @@ static int process_decimal(struct dynamic_string *str, token *token)
 }
 
 
-int get_next_token(FILE *source_file, token *token)
+int get_next_token(FILE *source_file, Token *token)
 {
 	// inicialization
-	struct dynamic_string string;
-	struct dynamic_string *str = &string;
+	Dynamic_string string;
+	Dynamic_string *str = &string;
 	dynamic_string_init(str);
 
 	int state = SCANNER_STATE_START;
 	token->type = TOKEN_TYPE_EMPTY;
 
-	char c, *endptr, strnum[4] = {[0 ... 3] = '\0'};
+	char c, *endptr, strnum[4] = {0};
 
 
 	// reading chars from source_file

@@ -12,6 +12,7 @@
 
 
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "dynamic_string.h"
 
@@ -130,7 +131,7 @@ enum token_type
  */
 union token_attribute
 {
-	struct dynamic_string *string; /// String or identifier value.
+	Dynamic_string *string; /// String or identifier value.
 	int integer; /// Integer value.
 	enum keyword keyword; /// Keyword, one of the KEYWORD_... constant
 	double decimal; /// Decimal value.
@@ -143,7 +144,7 @@ typedef struct token_t
 {
 	enum token_type type; /// Token type, one of token_type constants.
 	union token_attribute attribute; /// Attribute of token.
-} token;
+} Token;
 
 
 /**
@@ -153,7 +154,7 @@ typedef struct token_t
  * @param token Pointer to output token.
  * @return 0 (SCANNER_TOKEN_OK) if token is OK, otherwise in case of lex error one of SCANNER_ERROR_... constant.
  */
-int get_next_token(FILE *source_file, token *token);
+int get_next_token(FILE *source_file, Token *token);
 
 
 #endif //_SCANNER_H
