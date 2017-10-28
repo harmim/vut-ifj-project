@@ -1,4 +1,9 @@
 ic17int - referencni interpret ciloveho jazyka IFJcode17
-verze 2017-10-04
+verze 2017-10-27
 
 Prubezne doplnovane informace najdete na Wiki predmetu IFJ na strance ic17int.
+
+CHANGES:
+  * 2017-10-27:
+    * oprava chovani instrukce FLOAT2INT (nyni jiz zaokrouhluje oseknutim dle dokumentace)
+    * oprava preklepu ve vypisu --help

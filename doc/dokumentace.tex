@@ -1,0 +1,45 @@
+% Author: Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
+
+\documentclass[a4paper, 12pt]{article}
+
+\usepackage[czech]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[left=2cm, top=3cm, text={17cm, 24cm}]{geometry}
+\usepackage{times}
+\usepackage{graphics} % vkládání obrázků
+\usepackage[unicode]{hyperref}
+\hypersetup{colorlinks = true, hypertexnames = false}
+
+\newcommand{\RNum}[1]{\uppercase\expandafter{\romannumeral #1\relax}} % makro na sázení římských čísel
+
+\begin{document}
+
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Uvodni stranka %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	\begin{titlepage}
+		\begin{center}
+			\scalebox{0.7}{\includegraphics{img/FIT_logo.eps}} \\
+
+			\vspace{\stretch{0.382}}
+
+			\Huge{Projektová dokumentace} \\
+			\LARGE{\textbf{Implementace překladače imperativního jazyka IFJ17}} \\
+			\Large{Tým 104, varianta \RNum{2}}
+			\vspace{\stretch{0.618}}
+		\end{center}
+
+		\begin{minipage}{0.4 \textwidth}
+			{\Large \today}
+		\end{minipage}
+		\hfill
+		\begin{minipage}[r]{0.6 \textwidth}
+			\Large
+			\begin{tabular}{l l l}
+				\textbf{Dominik Harmim} & \textbf{(xharmi00)} & \quad 25\,\% \\
+				Vojtěch Hertl & (xhertl04) & \quad 25\,\% \\
+				Timotej Halás & (xhalas10) & \quad 25\,\% \\
+				Matej Karas & (xkaras34) & \quad 25\,\% \\
+			\end{tabular}
+		\end{minipage}
+	\end{titlepage}
+
+\end{document}
