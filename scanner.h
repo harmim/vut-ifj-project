@@ -140,7 +140,7 @@ union token_attribute
 /**
  * @struct Token representation.
  */
-typedef struct token_t
+typedef struct token
 {
 	enum token_type type; /// Token type, one of token_type constants.
 	union token_attribute attribute; /// Attribute of token.

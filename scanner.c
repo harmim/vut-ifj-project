@@ -149,8 +149,7 @@ int get_next_token(FILE *source_file, Token *token)
 	int state = SCANNER_STATE_START;
 	token->type = TOKEN_TYPE_EMPTY;
 
-	char c, *endptr, strnum[4] = {0};
-
+	char c, *endptr, strnum[4] = { 0 };
 
 	// reading chars from source_file
 	while (true)
