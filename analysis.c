@@ -370,3 +370,137 @@ int statement()
 
 	return SYNTAX_OK;
 }
+
+int def_var()
+{
+	int result;
+
+	// <def_var> -> = <def_val>
+	if (token.type == TOKEN_TYPE_ASSIGN)
+	{
+		// get next token and execute <def_val> rule
+		if (result = get_next_token(source_file, &token)) return result;
+		if (result = def_value()) return result;
+	}
+
+	// <def_var> -> ε
+
+	return SYNTAX_OK;
+}
+
+int def_value()
+{
+	int result;
+
+	// <def_value> -> ID( <arg> )
+	if (token.type == TOKEN_TYPE_IDENTIFIER)
+	{
+		// get next token and check for ( token
+		if (result = get_next_token(source_file, &token)) return result;
+		if (token.type != TOKEN_TYPE_LEFT_BRACKET) return SYNTAX_ERR;
+
+		// get next token and execute <arg> rule
+		if (result = get_next_token(source_file, &token)) return result;
+		if (result = arg()) return result;
+
+		// get next token and check for ) token
+		if (result = get_next_token(source_file, &token)) return result;
+		if (token.type != TOKEN_TYPE_RIGHT_BRACKET) return SYNTAX_ERR;
+	}
+
+	// <def_value> -> <expression>
+	else
+	{
+		// get next token and execute <expression> rule
+		if (result = get_next_token(source_file, &token)) return result;
+		if (result = expression()) return result;
+	}
+
+	return SYNTAX_OK;
+}
+
+int arg()
+{
+	int result;
+
+	// <arg> -> <value> <arg_n>
+	if (result = value()) return result;
+	if (result = arg_n()) return result;
+
+	// <arg> -> ε
+
+	return SYNTAX_OK;
+}
+
+int arg_n()
+{
+	int result;
+
+	// <arg_n> -> , <value> <arg_n>
+	if (token.type == TOKEN_TYPE_COMMA)
+	{
+		// get next token and execute <value> rule
+		if (result = get_next_token(source_file, &token)) return result;
+		if (result = value()) return result;
+
+		// get next token and execute <arg_n> rule
+		if (result = get_next_token(source_file, &token)) return result;
+		if (result = arg_n()) return result;
+	}
+
+	// <arg_n> -> ε
+
+	return SYNTAX_OK;
+}
+
+int value()
+{
+	int result;
+
+	// <value> -> double_value
+	if (token.type == TOKEN_TYPE_DOUBLE_NUMBER)
+	{
+		// get next token
+		if (result = get_next_token(source_file, &token)) return result;
+	}
+
+	// <def_value> -> <expression>
+	else if (token.type == TOKEN_TYPE_INT_NUMBER)
+	{
+		// get next token
+		if (result = get_next_token(source_file, &token)) return result;
+	}
+
+	else if (token.type == TOKEN_TYPE_STRING)
+	{
+		// get next token
+		if (result = get_next_token(source_file, &token)) return result;
+	}
+
+	else if (token.type == TOKEN_TYPE_IDENTIFIER)
+	{
+		// get next token
+		if (result = get_next_token(source_file, &token)) return result;
+	}
+
+	return SYNTAX_OK;
+}
+
+int print()
+{
+	int result;
+
+	// <print> -> <expression> ; <print>
+	if (result = expression()) return result;
+
+	if (token.type == TOKEN_TYPE_SEMICOLON)
+	{
+		// get next token and execute <print> rule
+		if (result = get_next_token(source_file, &token)) return result;
+		if (result = print()) return result;
+	}
+
+	// <print> -> ε
+
+	return SYNTAX_OK;
+}
