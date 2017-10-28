@@ -62,3 +62,9 @@ ifj17_compiler
 
 # is_it_ok test dir
 /is_it_ok_test
+
+# doc
+/dokumentace.pdf
+
+# pack
+/xharmi00.tgz
