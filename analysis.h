@@ -1,9 +1,10 @@
 ﻿/**
-* Project: Implementace překladače imperativního jazyka IFJ17.
-*
-* @brief Syntactical and semantical analysis
-* @author Matej karas <xkaras34@stud.fit.vutbr.cz>
-*/
+ * Project: Implementace překladače imperativního jazyka IFJ17.
+ *
+ * @brief Syntactical and semantical analysis interface.
+ * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
+ * @author Matej Karas <xkaras34@stud.fit.vutbr.cz>
+ */
 
 
 #ifndef _ANALYSIS_H
@@ -24,9 +25,13 @@ int param();
 int param_n();
 int statement();
 int def_var();
+int def_value();
 int arg();
 int arg_n();
+int value();
 int print();
+int analyse();
+int expression();
 
 
-#endif
+#endif //_SCANNER_H

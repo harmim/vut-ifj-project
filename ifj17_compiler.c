@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include "scanner.h"
+#include "analysis.h"
 
 
 #define ERROR_INTERNAL 99 /// Internal error, eg. malloc error etc.
@@ -25,6 +26,30 @@ int main(void)
 {
 	// FIXME: This is only for scanner (get_next_token function) testing.
 	// Example usage of scanner.
+
+	set_source_file(stdin);
+
+
+#if 0 // if 1 test for analysis else test for scanner
+	printf("Result of analysis was %d.\n", analyse());
+#else
+	Token token;
+	Dynamic_string string;
+	if (!dynamic_string_init(&string))
+	{
+		return ERROR_INTERNAL;
+	}
+	token.attribute.string = &string;
+	int code; // scanner reads from standard input
+
+	if (code = get_next_token(&token))
+	{
+		fprintf(stderr, "Scanner error!\n");
+		dynamic_string_free(&string);
+
+		return code; // scanner error occurred
+	}
+
 	while (true)
 	{
 		Token token;
@@ -34,9 +59,9 @@ int main(void)
 			return ERROR_INTERNAL;
 		}
 		token.attribute.string = &string;
-		int code = get_next_token(stdin, &token); // scanner reads from standard input
+		int code; // scanner reads from standard input
 
-		if (code)
+		if (code = get_next_token(&token))
 		{
 			fprintf(stderr, "Scanner error!\n");
 			dynamic_string_free(&string);
@@ -74,7 +99,7 @@ int main(void)
 		}
 		dynamic_string_free(&string);
 	}
-
+#endif // 0
 
 	return EXIT_SUCCESS; // compilation was successful
 }

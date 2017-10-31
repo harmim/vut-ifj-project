@@ -129,13 +129,13 @@ enum token_type
 /**
  * @union Token attribute.
  */
-union token_attribute
+typedef struct token_attribute
 {
 	Dynamic_string *string; /// String or identifier value.
 	int integer; /// Integer value.
 	enum keyword keyword; /// Keyword, one of the KEYWORD_... constant
 	double decimal; /// Decimal value.
-};
+} Token_attribute;
 
 /**
  * @struct Token representation.
@@ -143,7 +143,7 @@ union token_attribute
 typedef struct token
 {
 	enum token_type type; /// Token type, one of token_type constants.
-	union token_attribute attribute; /// Attribute of token.
+	Token_attribute attribute; /// Attribute of token.
 } Token;
 
 
@@ -154,7 +154,9 @@ typedef struct token
  * @param token Pointer to output token.
  * @return 0 (SCANNER_TOKEN_OK) if token is OK, otherwise in case of lex error one of SCANNER_ERROR_... constant.
  */
-int get_next_token(FILE *source_file, Token *token);
+int get_next_token(Token *token);
+
+void set_source_file(FILE *f);
 
 
 #endif //_SCANNER_H

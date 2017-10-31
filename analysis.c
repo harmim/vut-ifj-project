@@ -1,10 +1,25 @@
-﻿#include "analysis.h"
+﻿/**
+ * Project: Implementace překladače imperativního jazyka IFJ17.
+ *
+ * @brief Syntactical and semantical analysis imeplementation.
+ * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
+ * @author Matej Karas <xkaras34@stud.fit.vutbr.cz>
+ */
+
+
+#include "analysis.h"
 #include "scanner.h"
 #include <stdio.h>
 
-Token token;
-extern FILE* source_file;
+#define ERROR_INTERNAL 99 /// Internal error, eg. malloc error etc.
 
+Token token;
+
+/**
+ * Implementation of <prog> rule.
+ *
+ * @return Given exit code.
+ */
 int prog()
 {
 	int result;
@@ -13,27 +28,26 @@ int prog()
 	if (token.type == TOKEN_TYPE_KEYWORD && token.attribute.keyword == KEYWORD_SCOPE)
 	{
 		// get next token and check EOL token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 
 		// get next token and execute <statement> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = statement()) return result;
 
-		// get next token and check for END token
-		if (result = get_next_token(source_file, &token)) return result;
+		// check for END token
 		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_END) return SYNTAX_ERR;
 
 		// get next token and check for SCOPE token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_SCOPE) return SYNTAX_ERR;
 
 		// get next token and check for EOL token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 
 		// get next token and execute <prog> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		return prog();
 	}
 
@@ -41,15 +55,14 @@ int prog()
 	else if (token.type == TOKEN_TYPE_KEYWORD && token.attribute.keyword == KEYWORD_DECLARE)
 	{
 		// get next token and execute <func_head> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = func_head()) return result;
 
-		// get next token and check for EOL token
-		if (result = get_next_token(source_file, &token)) return result;
+		// check for EOL token
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 
 		// get next token and execute <prog> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		return prog();		
 	}
 
@@ -59,37 +72,45 @@ int prog()
 		return SYNTAX_OK;
 	}
 
-	// <prog> -> <func_head> <statement> END FUNCTION EOL <prog>
+	// <prog> -> <func_head EOL <statement> END FUNCTION EOL <prog>
 	else
 	{
-		// get next token and execute <func_head> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		// execute <func_head> rule
 		if (result = func_head()) return result;
 		
-		// get next token and execute <statement> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		// check for EOL token
+		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
+
+		// get next token
+		if (result = get_next_token(&token)) return result;
+
+		// execute <statement> rule
 		if (result = statement()) return result;
 
-		// get next token and check for END token
-		if (result = get_next_token(source_file, &token)) return result;
+		// check for END token
 		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_END) return SYNTAX_ERR;
 
 		// get next token and check for FUNCTION token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_FUNCTION) return SYNTAX_ERR;
 
 		// get next token and check for EOL token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 
 		// get next token and execute <prog> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		return prog();
 	}
 
 	return SYNTAX_ERR;
 }
 
+/**
+ * Implementation of <func_head> rule.
+ *
+ * @return Given exit code.
+ */
 int func_head()
 {
 	int result;
@@ -98,25 +119,32 @@ int func_head()
 	if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_FUNCTION) return SYNTAX_ERR;
 	
 	// get next token and check for ID token
-	if (result = get_next_token(source_file, &token)) return result;
+	if (result = get_next_token(&token)) return result;
 	if (token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
 
 	// get next token and execute <params> rule
-	if (result = get_next_token(source_file, &token)) return result;
+	if (result = get_next_token(&token)) return result;
 	if (result = params()) return result;
 
-	// get next token and check for AS token
-	if (result = get_next_token(source_file, &token)) return result;
+	// check for AS token
 	if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_AS) return SYNTAX_ERR;
 
 	// get next token and check for TYPE token
-	if (result = get_next_token(source_file, &token)) return result;
+	if (result = get_next_token(&token)) return result;
 	if (token.type != TOKEN_TYPE_KEYWORD || !(token.attribute.keyword == KEYWORD_INTEGER ||
 		token.attribute.keyword == KEYWORD_DOUBLE || token.attribute.keyword == KEYWORD_STRING)) return SYNTAX_ERR;
+
+	// get next token
+	if (result = get_next_token(&token)) return result;
 
 	return SYNTAX_OK;
 }
 
+/**
+ * Implementation of <params> rule.
+ *
+ * @return Given exit code.
+ */
 int params()
 {
 	int result;
@@ -125,12 +153,14 @@ int params()
 	if (token.type == TOKEN_TYPE_LEFT_BRACKET)
 	{
 		// get next token and execute <param> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = param()) return result;
 
-		// get next token and check for ) token
-		if (result = get_next_token(source_file, &token)) return result;
+		// check for ) token
 		if (token.type != TOKEN_TYPE_RIGHT_BRACKET) return SYNTAX_ERR;
+
+		// get next token
+		if (result = get_next_token(&token)) return result;
 	}
 
 	// <params> -> ε
@@ -138,28 +168,39 @@ int params()
 	return SYNTAX_OK;
 }
 
+/**
+ * Implementation of <param> rule.
+ *
+ * @return Given exit code.
+ */
 int param()
 {
 	int result;
+
 	// <param> -> ID AS TYPE <param_n>
 	if (token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
 
 	// get next token and check for AS token
-	if (result = get_next_token(source_file, &token)) return result;
+	if (result = get_next_token(&token)) return result;
 	if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_AS) return SYNTAX_ERR;
 
 	// get next token and check for TYPE token
-	if (result = get_next_token(source_file, &token)) return result;
+	if (result = get_next_token(&token)) return result;
 	if (token.type != TOKEN_TYPE_KEYWORD || !(token.attribute.keyword == KEYWORD_INTEGER ||
 		token.attribute.keyword == KEYWORD_DOUBLE || token.attribute.keyword == KEYWORD_STRING)) return SYNTAX_ERR;
 
 	// get next token and execute <param_n> rule
-	if (result = get_next_token(source_file, &token)) return result;
+	if (result = get_next_token(&token)) return result;
 	if (result = param_n()) return result;
 
 	return SYNTAX_OK;
 }
 
+/**
+ * Implementation of <param_n> rule.
+ *
+ * @return Given exit code.
+ */
 int param_n()
 {
 	int result;
@@ -168,20 +209,20 @@ int param_n()
 	if (token.type == TOKEN_TYPE_COMMA)
 	{
 		// get next token and check for ID token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
 
 		// get next token and check for AS token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_AS) return SYNTAX_ERR;
 
 		// get next token and check for TYPE token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_KEYWORD || !(token.attribute.keyword == KEYWORD_INTEGER ||
 			token.attribute.keyword == KEYWORD_DOUBLE || token.attribute.keyword == KEYWORD_STRING)) return SYNTAX_ERR;
 
 		// get next token and execute <param_n> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = param_n()) return result;
 	}
 
@@ -190,6 +231,11 @@ int param_n()
 	return SYNTAX_OK;
 }
 
+/**
+ * Implementation of <statement> rule.
+ *
+ * @return Given exit code.
+ */
 int statement()
 {
 	int result;
@@ -198,28 +244,27 @@ int statement()
 	if (token.type == TOKEN_TYPE_KEYWORD && token.attribute.keyword == KEYWORD_DIM)
 	{
 		// get next token and check for ID token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
 
 		// get next token and check for AS token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_AS) return SYNTAX_ERR;
 
 		// get next token and check for TYPE token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_KEYWORD || !(token.attribute.keyword == KEYWORD_INTEGER ||
 			token.attribute.keyword == KEYWORD_DOUBLE || token.attribute.keyword == KEYWORD_STRING)) return SYNTAX_ERR;
 
 		// get next token and execute <def_var> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = def_var()) return result;
 
-		// get next token and check for EOL token
-		if (result = get_next_token(source_file, &token)) return result;
+		// check for EOL token
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 		
 		// get next token and execute <statement> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		return statement();
 	}
 
@@ -227,47 +272,44 @@ int statement()
 	else if (token.type == TOKEN_TYPE_KEYWORD && token.attribute.keyword == KEYWORD_IF)
 	{
 		// get next token and execute <expression> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = expression()) return result;
 
-		// get next token and check for THEN token
-		if (result = get_next_token(source_file, &token)) return result;
+		// check for THEN token
 		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_THEN) return SYNTAX_ERR;
 
 		// get next token and check for EOL token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 
 		// get next token and execute <statement> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = statement()) return result;
 
-		// get next token and check for ELSE token
-		if (result = get_next_token(source_file, &token)) return result;
+		// check for ELSE token
 		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_ELSE) return SYNTAX_ERR;
 
 		// get next token and check for EOL token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 
 		// get next token and execute <statement> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = statement()) return result;
 
-		// get next token and check for END token
-		if (result = get_next_token(source_file, &token)) return result;
+		// check for END token
 		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_END) return SYNTAX_ERR;
 
 		// get next token and check for IF token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_IF) return SYNTAX_ERR;
 
 		// get next token and check for EOL token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 
 		// get next token and execute <statement> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		return statement();
 	}
 
@@ -275,31 +317,29 @@ int statement()
 	else if (token.type == TOKEN_TYPE_KEYWORD && token.attribute.keyword == KEYWORD_DO)
 	{
 		// get next token and check for WHILE token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_WHILE) return SYNTAX_ERR;
 
 		// get next token and execute <expression> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = expression()) return result;
 
-		// get next token and check for EOL token
-		if (result = get_next_token(source_file, &token)) return result;
+		// check for EOL token
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 
 		// get next token and execute <statement> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = statement()) return result;
 
-		// get next token and check for LOOP token
-		if (result = get_next_token(source_file, &token)) return result;
+		// check for LOOP token
 		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_LOOP) return SYNTAX_ERR;
 
 		// get next token and check for EOL token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 
 		// get next token and execute <statement> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		return statement();
 	}
 
@@ -307,19 +347,18 @@ int statement()
 	else if (token.type == TOKEN_TYPE_IDENTIFIER)
 	{
 		// get next token and check for = token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_ASSIGN) return SYNTAX_ERR;
 
 		// get next token and execute <expression> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = expression()) return result;
 
-		// get next token and check for EOL token
-		if (result = get_next_token(source_file, &token)) return result;
+		// check for EOL token
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 
 		// get next token and execute <statement> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		return statement();
 	}
 
@@ -327,15 +366,15 @@ int statement()
 	else if (token.type == TOKEN_TYPE_KEYWORD && token.attribute.keyword == KEYWORD_INPUT)
 	{
 		// get next token and check for ID token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
 
 		// get next token and check for EOL token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 
 		// get next token and execute <statement> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		return statement();
 	}
 
@@ -343,23 +382,21 @@ int statement()
 	else if (token.type == TOKEN_TYPE_KEYWORD && token.attribute.keyword == KEYWORD_PRINT)
 	{
 		// get next token and execute <expression> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = expression()) return result;
 
-		// get next token and check for ; token
-		if (result = get_next_token(source_file, &token)) return result;
+		// check for SEMICOLON token
 		if (token.type != TOKEN_TYPE_SEMICOLON) return SYNTAX_ERR;
 
 		// get next token and execute <print> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = print()) return result;
 
-		// get next token and check for EOL token
-		if (result = get_next_token(source_file, &token)) return result;
+		// check for EOL token
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 
 		// get next token and execute <statement> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		return statement();
 	}
 
@@ -371,6 +408,11 @@ int statement()
 	return SYNTAX_OK;
 }
 
+/**
+ * Implementation of <def_var> rule.
+ *
+ * @return Given exit code.
+ */
 int def_var()
 {
 	int result;
@@ -379,7 +421,7 @@ int def_var()
 	if (token.type == TOKEN_TYPE_ASSIGN)
 	{
 		// get next token and execute <def_val> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = def_value()) return result;
 	}
 
@@ -388,6 +430,11 @@ int def_var()
 	return SYNTAX_OK;
 }
 
+/**
+ * Implementation of <def_value> rule.
+ *
+ * @return Given exit code.
+ */
 int def_value()
 {
 	int result;
@@ -396,29 +443,31 @@ int def_value()
 	if (token.type == TOKEN_TYPE_IDENTIFIER)
 	{
 		// get next token and check for ( token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_LEFT_BRACKET) return SYNTAX_ERR;
 
 		// get next token and execute <arg> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = arg()) return result;
 
-		// get next token and check for ) token
-		if (result = get_next_token(source_file, &token)) return result;
+		// check for ) token
 		if (token.type != TOKEN_TYPE_RIGHT_BRACKET) return SYNTAX_ERR;
+
+		// get next token
+		if (result = get_next_token(&token)) return result;
 	}
 
-	// <def_value> -> <expression>
-	else
-	{
-		// get next token and execute <expression> rule
-		if (result = get_next_token(source_file, &token)) return result;
-		if (result = expression()) return result;
-	}
+	// <def_value> -> <expression>	
+	if (result = expression()) return result;
 
 	return SYNTAX_OK;
 }
 
+/**
+ * Implementation of <arg> rule.
+ *
+ * @return Given exit code.
+ */
 int arg()
 {
 	int result;
@@ -432,6 +481,11 @@ int arg()
 	return SYNTAX_OK;
 }
 
+/**
+ * Implementation of <arg_n> rule.
+ *
+ * @return Given exit code.
+ */
 int arg_n()
 {
 	int result;
@@ -440,11 +494,11 @@ int arg_n()
 	if (token.type == TOKEN_TYPE_COMMA)
 	{
 		// get next token and execute <value> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = value()) return result;
 
 		// get next token and execute <arg_n> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = arg_n()) return result;
 	}
 
@@ -453,6 +507,11 @@ int arg_n()
 	return SYNTAX_OK;
 }
 
+/**
+ * Implementation of <value> rule.
+ *
+ * @return Given exit code.
+ */
 int value()
 {
 	int result;
@@ -461,31 +520,41 @@ int value()
 	if (token.type == TOKEN_TYPE_DOUBLE_NUMBER)
 	{
 		// get next token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 	}
 
-	// <def_value> -> <expression>
+	// <value> -> int_value
 	else if (token.type == TOKEN_TYPE_INT_NUMBER)
 	{
 		// get next token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 	}
-
+	// <value> -> string
 	else if (token.type == TOKEN_TYPE_STRING)
 	{
 		// get next token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 	}
-
+	// <value> -> ID
 	else if (token.type == TOKEN_TYPE_IDENTIFIER)
 	{
 		// get next token
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
+	}
+
+	else
+	{
+		return SYNTAX_ERR;
 	}
 
 	return SYNTAX_OK;
 }
 
+/**
+ * Implementation of <print> rule.
+ *
+ * @return Given exit code.
+ */
 int print()
 {
 	int result;
@@ -496,11 +565,44 @@ int print()
 	if (token.type == TOKEN_TYPE_SEMICOLON)
 	{
 		// get next token and execute <print> rule
-		if (result = get_next_token(source_file, &token)) return result;
+		if (result = get_next_token(&token)) return result;
 		if (result = print()) return result;
 	}
 
 	// <print> -> ε
 
+	return SYNTAX_OK;
+}
+
+int analyse() 
+{
+	int result;
+
+	Dynamic_string string;
+	if (!dynamic_string_init(&string))
+	{
+		return ERROR_INTERNAL;
+	}
+	token.attribute.string = &string;
+
+	if (result = get_next_token(&token))
+	{
+		fprintf(stderr, "Scanner error!\n");
+		dynamic_string_free(&string);
+	}
+	else
+	{
+		result = prog();
+	}
+	
+	dynamic_string_free(&string);
+
+	return result;
+	
+}
+
+
+int expression()
+{
 	return SYNTAX_OK;
 }

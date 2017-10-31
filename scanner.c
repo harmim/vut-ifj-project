@@ -14,6 +14,18 @@
 
 #include "scanner.h"
 
+// Source file that will be scanned
+FILE *source_file;
+
+/**
+ * Set source file.
+ *
+ * @param f file.
+ */
+void set_source_file(FILE *f)
+{
+	source_file = f;
+}
 
 /**
  * Free resources and returns exit code.
@@ -139,7 +151,7 @@ static int process_decimal(Dynamic_string *str, Token *token)
 }
 
 
-int get_next_token(FILE *source_file, Token *token)
+int get_next_token(Token *token)
 {
 	// inicialization
 	Dynamic_string string;
