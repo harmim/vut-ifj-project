@@ -10,28 +10,11 @@
 #ifndef _ANALYSIS_H
 #define _ANALYSIS_H
 
-#define SYNTAX_OK					0
-#define SYNTAX_ERR					2
-#define SEM_ERR_UNDEFINED_VAR		3
-#define SEM_ERR_TYPE_COMPAT			4
-#define SEM_ERR_OTHER				6
+#define SYNTAX_OK 0 /// Syntax is ok.
 
-// function prototypes
-
-int prog();
-int func_head();
-int params();
-int param();
-int param_n();
-int statement();
-int def_var();
-int def_value();
-int arg();
-int arg_n();
-int value();
-int print();
+ /**
+  * Starts syntactic and semantic anlysis.
+  */
 int analyse();
-int expression();
 
-
-#endif //_SCANNER_H
+#endif //_ANALYSIS_H

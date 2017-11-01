@@ -2,6 +2,7 @@
  * Project: Implementace překladače imperativního jazyka IFJ17.
  *
  * @brief Scanner implementation.
+ * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
  * @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
  * @author Vojtěch Hertl <xhertl04@stud.fit.vutbr.cz>
  */
@@ -12,20 +13,11 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "error.h"
 #include "scanner.h"
 
-// Source file that will be scanned
-FILE *source_file;
-
-/**
- * Set source file.
- *
- * @param f file.
- */
-void set_source_file(FILE *f)
-{
-	source_file = f;
-}
+FILE *source_file; /// Source file that will be scanned
+Dynamic_string *dynamic_string; /// Dynamic string that will be written into
 
 /**
  * Free resources and returns exit code.
@@ -151,8 +143,31 @@ static int process_decimal(Dynamic_string *str, Token *token)
 }
 
 
+void set_source_file(FILE *f)
+{
+	source_file = f;
+}
+
+
+void set_dynamic_string(Dynamic_string *string)
+{
+	dynamic_string = string;
+}
+
 int get_next_token(Token *token)
 {
+	if (source_file == NULL)
+	{
+		return SCANNER_ERROR_INTERNAL;
+	}
+
+	if (dynamic_string == NULL)
+	{
+		return SCANNER_ERROR_INTERNAL;
+	}
+
+	token->attribute.string = dynamic_string;
+
 	// inicialization
 	Dynamic_string string;
 	Dynamic_string *str = &string;

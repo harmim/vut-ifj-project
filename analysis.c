@@ -7,13 +7,17 @@
  */
 
 
-#include "analysis.h"
-#include "scanner.h"
 #include <stdio.h>
 
-#define ERROR_INTERNAL 99 /// Internal error, eg. malloc error etc.
+#include "error.h"
+#include "scanner.h"
+#include "analysis.h"
 
 Token token;
+
+// needed function (rule) prototypes for <prog> rule
+int statement();
+int func_head();
 
 /**
  * Implementation of <prog> rule.
@@ -72,7 +76,7 @@ int prog()
 		return SYNTAX_OK;
 	}
 
-	// <prog> -> <func_head EOL <statement> END FUNCTION EOL <prog>
+	// <prog> -> <func_head> EOL <statement> END FUNCTION EOL <prog>
 	else
 	{
 		// execute <func_head> rule
@@ -105,6 +109,9 @@ int prog()
 
 	return SYNTAX_ERR;
 }
+
+// needed function (rule) prototypes for <func_head> rule
+int params();
 
 /**
  * Implementation of <func_head> rule.
@@ -140,6 +147,9 @@ int func_head()
 	return SYNTAX_OK;
 }
 
+// needed function (rule) prototypes for <params> rule
+int param();
+
 /**
  * Implementation of <params> rule.
  *
@@ -167,6 +177,9 @@ int params()
 	
 	return SYNTAX_OK;
 }
+
+// needed function (rule) prototypes for <param> rule
+int param_n();
 
 /**
  * Implementation of <param> rule.
@@ -230,6 +243,11 @@ int param_n()
 
 	return SYNTAX_OK;
 }
+
+// needed function (rule) prototypes for <statement> rule
+int expression();
+int def_var();
+int print();
 
 /**
  * Implementation of <statement> rule.
@@ -408,6 +426,9 @@ int statement()
 	return SYNTAX_OK;
 }
 
+// needed function (rule) prototypes for <def_var> rule
+int def_value();
+
 /**
  * Implementation of <def_var> rule.
  *
@@ -429,6 +450,9 @@ int def_var()
 
 	return SYNTAX_OK;
 }
+
+// needed function (rule) prototypes for <def_value> rule
+int arg();
 
 /**
  * Implementation of <def_value> rule.
@@ -462,6 +486,10 @@ int def_value()
 
 	return SYNTAX_OK;
 }
+
+// needed function (rule) prototypes for <arg> rule
+int arg_n();
+int value();
 
 /**
  * Implementation of <arg> rule.
@@ -579,11 +607,13 @@ int analyse()
 	int result;
 
 	Dynamic_string string;
+
 	if (!dynamic_string_init(&string))
 	{
-		return ERROR_INTERNAL;
+		return ERROR_OTHER;
 	}
-	token.attribute.string = &string;
+
+	set_dynamic_string(&string);
 
 	if (result = get_next_token(&token))
 	{
@@ -598,9 +628,7 @@ int analyse()
 	dynamic_string_free(&string);
 
 	return result;
-	
 }
-
 
 int expression()
 {

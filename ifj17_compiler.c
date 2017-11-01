@@ -2,6 +2,7 @@
  * Project: Implementace překladače imperativního jazyka IFJ17.
  *
  * @brief Main file of compiler.
+ * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
  * @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
  */
 
@@ -10,11 +11,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "error.h"
 #include "scanner.h"
 #include "analysis.h"
-
-
-#define ERROR_INTERNAL 99 /// Internal error, eg. malloc error etc.
 
 
 /**
@@ -29,37 +28,21 @@ int main(void)
 
 	set_source_file(stdin);
 
-
-#if 0 // if 1 test for analysis else test for scanner
+#if 1 // if 1 test for analysis else test for scanner
 	printf("Result of analysis was %d.\n", analyse());
 #else
 	Token token;
 	Dynamic_string string;
 	if (!dynamic_string_init(&string))
 	{
-		return ERROR_INTERNAL;
+		return ERROR_OTHER;
 	}
-	token.attribute.string = &string;
-	int code; // scanner reads from standard input
+	set_dynamic_string(&string);
 
-	if (code = get_next_token(&token))
-	{
-		fprintf(stderr, "Scanner error!\n");
-		dynamic_string_free(&string);
-
-		return code; // scanner error occurred
-	}
+	int code;
 
 	while (true)
 	{
-		Token token;
-		Dynamic_string string;
-		if (!dynamic_string_init(&string))
-		{
-			return ERROR_INTERNAL;
-		}
-		token.attribute.string = &string;
-		int code; // scanner reads from standard input
 
 		if (code = get_next_token(&token))
 		{
@@ -67,6 +50,11 @@ int main(void)
 			dynamic_string_free(&string);
 
 			return code; // scanner error occurred
+		}
+
+		if (token.type == TOKEN_TYPE_EOL)
+		{
+			continue;
 		}
 
 		printf("Token type is %d.\n", token.type);
@@ -91,14 +79,9 @@ int main(void)
 		{
 			printf("Token string is %s.\n", token.attribute.string->str);
 		}
-
-		if (token.type == TOKEN_TYPE_EOF)
-		{
-			dynamic_string_free(&string);
-			break;
-		}
-		dynamic_string_free(&string);
 	}
+
+	dynamic_string_free(&string);
 #endif // 0
 
 	return EXIT_SUCCESS; // compilation was successful
