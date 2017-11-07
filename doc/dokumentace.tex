@@ -6,7 +6,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage[left=2cm, top=3cm, text={17cm, 24cm}]{geometry}
 \usepackage{times}
-\usepackage{graphics} % vkládání obrázků
+\usepackage{graphicx} % vkládání obrázků
 \usepackage[unicode]{hyperref}
 \hypersetup{
 	colorlinks = true,
@@ -21,7 +21,7 @@
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Titulní stránka %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\begin{titlepage}
 		\begin{center}
-			\scalebox{0.7}{\includegraphics{img/FIT_logo.eps}} \\
+			\includegraphics[width=0.77\linewidth]{inc/FIT_logo.pdf} \\
 
 			\vspace{\stretch{0.382}}
 
@@ -217,8 +217,14 @@
 
 	\section{Diagram konečného automatu specifikující lexikální analyzátor}
 
-	TODO
-
+	\begin{figure}[!ht]
+		\centering
+		\vspace{-1.2cm}
+		\includegraphics[width=0.95\linewidth]{inc/FA_graph.pdf}
+		\caption{Diagram konečného automatu specifikující lexikální analyzátor}
+		\label{figure:fa_graph}
+	\end{figure}
+	\newpage
 
 	\section{LL-gramatika}
 

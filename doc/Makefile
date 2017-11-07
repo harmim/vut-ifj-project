@@ -5,32 +5,16 @@ DOC = dokumentace
 IMG_DIR = img
 
 
-$(DOC).pdf: $(DOC).ps
-	ps2pdf -sPAPERSIZE=a4 $<
-
-
-$(DOC).ps: $(DOC).dvi
-	dvips $<
-
-
-$(DOC).dvi: $(DOC).tex
-	latex $<
+$(DOC).pdf: $(DOC).tex
+	pdflatex $<
 	make bibtex
-	latex $<
-	latex $<
+	pdflatex $<
+	pdflatex $<
 
 
 .PHONY: bibtex
 bibtex: $(DOC).bib
 	bibtex $(DOC)
-
-
-.PHONY: pdflatex
-pdflatex: $(DOC).tex
-	pdflatex $<
-	make bibtex
-	pdflatex $<
-	pdflatex $<
 
 
 .PHONY: clean
