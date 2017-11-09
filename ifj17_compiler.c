@@ -14,7 +14,7 @@
 #include "error.h"
 #include "scanner.h"
 #include "analysis.h"
-
+#include "symtable.h"
 
 /**
  * Main function.
@@ -25,8 +25,30 @@ int main(void)
 {
 	// FIXME: This is only for scanner (get_next_token function) testing.
 	// Example usage of scanner.
-
 	set_source_file(stdin);
+
+	// symbol table tests
+	Sym_table table;
+	TData* data;
+	sym_table_init(&table);
+	data = sym_table_add_symbol(&table, "test");
+	sym_table_add_param(data, TYPE_INT);
+	sym_table_add_param(data, TYPE_INT);
+	sym_table_add_param(data, TYPE_STRING);
+	sym_table_add_param(data, TYPE_DOUBLE);
+	int a = sym_table_number_of_params(&table, "test");
+
+	data = sym_table_add_symbol(&table, "test2");
+	sym_table_add_param(data, -1);
+
+	data = sym_table_add_symbol(&table, "test3");
+	data = sym_table_add_symbol(&table, "test4");
+
+	data = sym_table_add_symbol(&table, "test");
+
+	sym_table_remove_symbol(&table, "test");
+	sym_table_remove_symbol(&table, "testz");
+	sym_table_free(&table);
 
 #if 1 // if 1 test for analysis else test for scanner
 	printf("Result of analysis was %d.\n", analyse());
