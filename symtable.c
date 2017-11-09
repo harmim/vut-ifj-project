@@ -22,7 +22,6 @@
 unsigned hash_function(const char *str)
 {
 	unsigned int index = 0;
-
 	const unsigned char *char_ptr;
 
 	for (char_ptr = (const unsigned char*)str; *char_ptr != '\0'; char_ptr++)
@@ -42,7 +41,6 @@ void sym_table_init(Sym_table *table)
 	{
 		(*table)[i] = NULL;
 	}
-
 }
 
 
@@ -67,6 +65,7 @@ TData *sym_table_add_symbol(Sym_table *table, const char *key)
 		return NULL;
 
 	new_item->key = (char *)malloc((strlen(key) + 1) * sizeof(char));
+
 	if (new_item->key == NULL) {
 		free(new_item);
 		return NULL;
@@ -95,8 +94,7 @@ bool sym_table_add_param(TData *data, int data_type)
 		if (!(data->params = (Dynamic_string *)malloc(sizeof(Dynamic_string))))
 			return false;
 		dynamic_string_init(data->params);
-	}
-		
+	}		
 
 	switch (data_type)
 	{
@@ -125,10 +123,12 @@ int sym_table_number_of_params(Sym_table *table, const char *key)
 		return;
 
 	TData *data = sym_table_search(table, key);
+
 	if (data == NULL)
 		return NONEXISTING_SYMBOL;
 	if (data->params == NULL)
 		return NOT_FUNCTION;
+
 	return (int)data->params->length;
 }
 
@@ -185,7 +185,6 @@ bool sym_table_remove_symbol(Sym_table *table, const char *key)
 	}
 
 	return false;
-
 }
 
 void sym_table_free(Sym_table *table)
@@ -208,6 +207,7 @@ void sym_table_free(Sym_table *table)
 
 			free(tmp);
 		}
+
 		(*table)[i] = NULL;
 	}
 }

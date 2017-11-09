@@ -10,9 +10,7 @@
 #ifndef _SYMTABLE_H
 #define _SYMTABLE_H
 
-
 #include "dynamic_string.h"
-
 
 #define MAX_SYMTABLE_SIZE 100 /// Symbol table size
 
