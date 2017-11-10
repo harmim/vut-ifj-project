@@ -15,9 +15,22 @@
 
 Token token;
 
-// needed function (rule) prototypes for <prog> rule
+bool scope_processed;
+bool in_function;
+
+// forward declarations
 int statement();
 int func_head();
+int expression();
+int def_var();
+int print();
+int param_n();
+int def_value();
+int arg_n();
+int value();
+int arg();
+int params();
+int param();
 
 /**
  * Implementation of <prog> rule.
@@ -31,6 +44,15 @@ int prog()
 	// <prog> -> SCOPE EOL <statement> END SCOPE EOL <prog>
 	if (token.type == TOKEN_TYPE_KEYWORD && token.attribute.keyword == KEYWORD_SCOPE)
 	{
+		// we are in scope
+		in_function = false;
+		
+		// program may contain only 1 scope
+		if (scope_processed)
+			return SEM_ERR_OTHER;
+		else
+			scope_processed = true;
+
 		// get next token and check EOL token
 		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
@@ -109,10 +131,6 @@ int prog()
 
 	return SYNTAX_ERR;
 }
-
-// needed function (rule) prototypes for <func_head> rule
-int params();
-
 /**
  * Implementation of <func_head> rule.
  *
@@ -146,10 +164,6 @@ int func_head()
 
 	return SYNTAX_OK;
 }
-
-// needed function (rule) prototypes for <params> rule
-int param();
-
 /**
  * Implementation of <params> rule.
  *
@@ -177,9 +191,6 @@ int params()
 	
 	return SYNTAX_OK;
 }
-
-// needed function (rule) prototypes for <param> rule
-int param_n();
 
 /**
  * Implementation of <param> rule.
@@ -243,11 +254,6 @@ int param_n()
 
 	return SYNTAX_OK;
 }
-
-// needed function (rule) prototypes for <statement> rule
-int expression();
-int def_var();
-int print();
 
 /**
  * Implementation of <statement> rule.
@@ -418,16 +424,29 @@ int statement()
 		return statement();
 	}
 
-	// TODO
 	// <statement> -> RETURN <expression> EOL <statement>
+	else if (token.type == TOKEN_TYPE_KEYWORD && token.attribute.keyword == KEYWORD_RETURN)
+	{
+		// scope doesn't have this type of rule
+		if (!in_function) return SEM_ERR_OTHER;
+
+		// get next token and execute <expression> rule
+		if (result = get_next_token(&token)) return result;
+		if (result = expression()) return result;
+
+		// check for EOL token
+		if (result = get_next_token(&token)) return result;
+		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
+
+		// get next token and execute <statement> rule
+		if (result = get_next_token(&token)) return result;
+		return statement();
+	}
 
 	// <statement> -> ε
 
 	return SYNTAX_OK;
 }
-
-// needed function (rule) prototypes for <def_var> rule
-int def_value();
 
 /**
  * Implementation of <def_var> rule.
@@ -450,9 +469,6 @@ int def_var()
 
 	return SYNTAX_OK;
 }
-
-// needed function (rule) prototypes for <def_value> rule
-int arg();
 
 /**
  * Implementation of <def_value> rule.
@@ -486,10 +502,6 @@ int def_value()
 
 	return SYNTAX_OK;
 }
-
-// needed function (rule) prototypes for <arg> rule
-int arg_n();
-int value();
 
 /**
  * Implementation of <arg> rule.
@@ -602,6 +614,15 @@ int print()
 	return SYNTAX_OK;
 }
 
+/**
+* Initialize variable needed for analysis. 
+*/
+void init_variables()
+{
+	scope_processed = false;
+	in_function = false;
+}
+
 int analyse() 
 {
 	int result;
@@ -614,6 +635,7 @@ int analyse()
 	}
 
 	set_dynamic_string(&string);
+	init_variables();
 
 	if (result = get_next_token(&token))
 	{
@@ -629,6 +651,7 @@ int analyse()
 
 	return result;
 }
+
 
 int expression()
 {

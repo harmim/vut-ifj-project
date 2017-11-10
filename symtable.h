@@ -4,6 +4,7 @@
  * @brief Symbol table interface.
  * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
  * @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
+ * @author Matej Karas <xkaras34@stud.fit.vutbr.cz>
  */
 
 
@@ -12,7 +13,7 @@
 
 #include "dynamic_string.h"
 
-#define MAX_SYMTABLE_SIZE 100 /// Symbol table size
+#define MAX_SYMTABLE_SIZE 2048 /// Symbol table size
 
 // sybol defines
 #define NONEXISTING_SYMBOL -1 /// Non existing symbol
