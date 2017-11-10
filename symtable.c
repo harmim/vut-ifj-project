@@ -44,10 +44,15 @@ void sym_table_init(Sym_table *table)
 }
 
 
-TData *sym_table_add_symbol(Sym_table *table, const char *key)
+TData *sym_table_add_symbol(Sym_table *table, const char *key, bool* alloc_failed)
 {
+	*alloc_failed = false;
+
 	if (table == NULL || key == NULL)
+	{
+		*alloc_failed = true;
 		return NULL;
+	}
 
 	unsigned index = hash_function(key);
 	Sym_table_item *tmp_last = NULL;
@@ -62,12 +67,16 @@ TData *sym_table_add_symbol(Sym_table *table, const char *key)
 
 	Sym_table_item *new_item = (Sym_table_item *)malloc(sizeof(Sym_table_item));
 	if (new_item == NULL)
+	{
+		*alloc_failed = true;
 		return NULL;
+	}
 
 	new_item->key = (char *)malloc((strlen(key) + 1) * sizeof(char));
 
 	if (new_item->key == NULL) {
 		free(new_item);
+		*alloc_failed = true;
 		return NULL;
 	}
 

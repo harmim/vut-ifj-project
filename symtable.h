@@ -13,7 +13,7 @@
 
 #include "dynamic_string.h"
 
-#define MAX_SYMTABLE_SIZE 2048 /// Symbol table size
+#define MAX_SYMTABLE_SIZE 1024 /// Symbol table size
 
 // sybol defines
 #define NONEXISTING_SYMBOL -1 /// Non existing symbol
@@ -57,9 +57,10 @@ void sym_table_init(Sym_table *table);
  *
  * @param table Pointer to table.
  * @param key Identifier of function or variable.
+ * @param alloc_success True if allocation failed, otherwise true. 
  * @return Returns NULL if error or item is existing else returns pointer to added item.
  */
-TData *sym_table_add_symbol(Sym_table *table, const char *key);
+TData *sym_table_add_symbol(Sym_table *table, const char *key, bool* alloc_failed);
 
 /**
  * Function appends parameter to symbol.
