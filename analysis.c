@@ -77,14 +77,31 @@ int prog()
 		return prog();
 	}
 
-	// <prog> -> DECLARE <func_head> EOL <prog>
+	// <prog> -> DECLARE FUNCTION ID <params> AS TYPE EOL <prog>
 	else if (token.type == TOKEN_TYPE_KEYWORD && token.attribute.keyword == KEYWORD_DECLARE)
 	{
-		// get next token and execute <func_head> rule
+		// get next token and check for FUNCTION token
 		if (result = get_next_token(&token)) return result;
-		if (result = func_head()) return result;
+		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_FUNCTION) return SYNTAX_ERR;
 
-		// check for EOL token
+		// get next token and check for ID token
+		if (result = get_next_token(&token)) return result;
+		if (token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
+
+		// get next token and execute <params> rule
+		if (result = get_next_token(&token)) return result;
+		if (result = params()) return result;
+
+		// check for AS token
+		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_AS) return SYNTAX_ERR;
+
+		// get next token and check for TYPE token
+		if (result = get_next_token(&token)) return result;
+		if (token.type != TOKEN_TYPE_KEYWORD || !(token.attribute.keyword == KEYWORD_INTEGER ||
+			token.attribute.keyword == KEYWORD_DOUBLE || token.attribute.keyword == KEYWORD_STRING)) return SYNTAX_ERR;
+
+		// get next token and check for EOL token
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 
 		// get next token and execute <prog> rule
@@ -98,19 +115,35 @@ int prog()
 		return SYNTAX_OK;
 	}
 
-	// <prog> -> <func_head> EOL <statement> END FUNCTION EOL <prog>
+	// <prog> -> FUNCTION ID <params> AS TYPE EOL <statement> END FUNCTION EOL <prog>
 	else
 	{
-		// execute <func_head> rule
-		if (result = func_head()) return result;
-		
-		// check for EOL token
+		// get next token and check for FUNCTION token
+		if (result = get_next_token(&token)) return result;
+		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_FUNCTION) return SYNTAX_ERR;
+
+		// get next token and check for ID token
+		if (result = get_next_token(&token)) return result;
+		if (token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
+
+		// get next token and execute <params> rule
+		if (result = get_next_token(&token)) return result;
+		if (result = params()) return result;
+
+		// check for AS token
+		if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_AS) return SYNTAX_ERR;
+
+		// get next token and check for TYPE token
+		if (result = get_next_token(&token)) return result;
+		if (token.type != TOKEN_TYPE_KEYWORD || !(token.attribute.keyword == KEYWORD_INTEGER ||
+			token.attribute.keyword == KEYWORD_DOUBLE || token.attribute.keyword == KEYWORD_STRING)) return SYNTAX_ERR;
+
+		// get next token and check for EOL token
+		if (result = get_next_token(&token)) return result;
 		if (token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 
-		// get next token
+		// get next and execute <statement> rule
 		if (result = get_next_token(&token)) return result;
-
-		// execute <statement> rule
 		if (result = statement()) return result;
 
 		// check for END token
@@ -131,39 +164,7 @@ int prog()
 
 	return SYNTAX_ERR;
 }
-/**
- * Implementation of <func_head> rule.
- *
- * @return Given exit code.
- */
-int func_head()
-{
-	int result;
 
-	// <func_head> -> FUNCTION ID <params> AS TYPE
-	if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_FUNCTION) return SYNTAX_ERR;
-	
-	// get next token and check for ID token
-	if (result = get_next_token(&token)) return result;
-	if (token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
-
-	// get next token and execute <params> rule
-	if (result = get_next_token(&token)) return result;
-	if (result = params()) return result;
-
-	// check for AS token
-	if (token.type != TOKEN_TYPE_KEYWORD || token.attribute.keyword != KEYWORD_AS) return SYNTAX_ERR;
-
-	// get next token and check for TYPE token
-	if (result = get_next_token(&token)) return result;
-	if (token.type != TOKEN_TYPE_KEYWORD || !(token.attribute.keyword == KEYWORD_INTEGER ||
-		token.attribute.keyword == KEYWORD_DOUBLE || token.attribute.keyword == KEYWORD_STRING)) return SYNTAX_ERR;
-
-	// get next token
-	if (result = get_next_token(&token)) return result;
-
-	return SYNTAX_OK;
-}
 /**
  * Implementation of <params> rule.
  *
