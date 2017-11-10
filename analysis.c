@@ -16,12 +16,16 @@
 
 typedef struct parser_internal_data
 {
-	Token token;
+	Token token;				/// Token
 	
-	bool scope_processed;
-	bool in_function;
-	Sym_table global_table;
-	Sym_table local_table;
+	bool scope_processed;		/// Defines if the main scope has been processed
+	bool in_function;			/// Defines if the parser is in function
+	Sym_table global_table;		/// Global symbol table
+	Sym_table local_table;		/// Local symbol table
+
+	TData* current_id;			/// ID of currently processed function
+	bool add_params_flag;			/// Defines if param rule should add or check it's params
+	int param_index;			/// Index of currently checked param
 } PData;
 
 
@@ -66,6 +70,8 @@ int prog(PData* data)
 		// get next token and execute <statement> rule
 		if (result = get_next_token(&data->token)) return result;
 		if (result = statement(data)) return result;
+		// clear local symbol table
+		sym_table_free(data->local_table);
 
 		// check for END token
 		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_END) return SYNTAX_ERR;
@@ -94,15 +100,17 @@ int prog(PData* data)
 		if (result = get_next_token(&data->token)) return result;
 		if (data->token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
 
+		// add id to the global symbol table
 		bool internal_error; 
-		TData* id = sym_table_add_symbol(data->global_table, NULL, &internal_error);
-		if (!id)
+		data->current_id = sym_table_add_symbol(data->global_table, data->token.attribute.string->str, &internal_error);
+		if (!data->current_id)
 		{
 			if (internal_error) return ERROR_OTHER;
 			else return SEM_ERR_UNDEFINED_VAR;
 		}
 		
 		// get next token and execute <params> rule
+		data->add_params_flag = true;
 		if (result = get_next_token(&data->token)) return result;
 		if (result = params(data)) return result;
 
@@ -111,13 +119,32 @@ int prog(PData* data)
 
 		// get next token and check for TYPE token
 		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_KEYWORD || !(data->token.attribute.keyword == KEYWORD_INTEGER ||
-			data->token.attribute.keyword == KEYWORD_DOUBLE || data->token.attribute.keyword == KEYWORD_STRING)) return SYNTAX_ERR;
+		if (data->token.type == TOKEN_TYPE_KEYWORD)
+		{
+			switch (data->token.attribute.keyword)
+			{
+			case KEYWORD_INTEGER:
+				data->current_id->type = TYPE_INT; 
+				break;
+
+			case KEYWORD_DOUBLE:
+				data->current_id->type = TYPE_DOUBLE;
+				break;
+
+			case KEYWORD_STRING:
+				data->current_id->type = TYPE_STRING;
+				break;
+
+			default:
+				return SYNTAX_ERR;
+			}
+		}
+		else return SYNTAX_ERR;
 
 		// get next token and check for EOL token
 		if (result = get_next_token(&data->token)) return result;
 		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
-
+		
 		// get next token and execute <prog> rule
 		if (result = get_next_token(&data->token)) return result;
 		return prog(data);		
@@ -126,6 +153,11 @@ int prog(PData* data)
 	// <prog> -> EOF
 	else if (data->token.type == TOKEN_TYPE_EOF)
 	{
+		// check if all functions are defined
+		for (int i = 0; i < MAX_SYMTABLE_SIZE; i++)
+			for (Sym_table_item* it = data->global_table[i]; it != NULL; it = it->next)
+				if (!it->data.defined) return SEM_ERR_UNDEFINED_VAR;
+
 		return SYNTAX_OK;
 	}
 
@@ -140,7 +172,12 @@ int prog(PData* data)
 		if (result = get_next_token(&data->token)) return result;
 		if (data->token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
 
+		data->current_id = sym_table_search(&data->global_table, data->token.attribute.string->str);
+		if (!data->current_id)
+			return SEM_ERR_UNDEFINED_VAR;
+
 		// get next token and execute <params> rule
+		data->add_params_flag = false;
 		if (result = get_next_token(&data->token)) return result;
 		if (result = params(data)) return result;
 
@@ -149,8 +186,26 @@ int prog(PData* data)
 
 		// get next token and check for TYPE token
 		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_KEYWORD || !(data->token.attribute.keyword == KEYWORD_INTEGER ||
-			data->token.attribute.keyword == KEYWORD_DOUBLE || data->token.attribute.keyword == KEYWORD_STRING)) return SYNTAX_ERR;
+		if (data->token.type == TOKEN_TYPE_KEYWORD)
+		{
+			switch (data->token.attribute.keyword)
+			{
+			case KEYWORD_INTEGER:
+				if (data->current_id->type != TYPE_INT) return SEM_ERR_TYPE_COMPAT;
+				break;
+
+			case KEYWORD_DOUBLE:
+				if (data->current_id->type != TYPE_DOUBLE) return SEM_ERR_TYPE_COMPAT;
+				break;
+
+			case KEYWORD_STRING:
+				if (data->current_id->type != TYPE_STRING) return SEM_ERR_TYPE_COMPAT;
+				break;
+
+			default:
+				return SYNTAX_ERR;
+			}
+		}
 
 		// get next token and check for EOL token
 		if (result = get_next_token(&data->token)) return result;
@@ -159,6 +214,8 @@ int prog(PData* data)
 		// get next and execute <statement> rule
 		if (result = get_next_token(&data->token)) return result;
 		if (result = statement(data)) return result;
+		// clear local symtable
+		sym_table_free(&data->local_table);
 
 		// check for END token
 		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_END) return SYNTAX_ERR;
@@ -170,6 +227,9 @@ int prog(PData* data)
 		// get next token and check for EOL token
 		if (result = get_next_token(&data->token)) return result;
 		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
+
+		// Current function is defined
+		data->current_id->defined = true;
 
 		// get next token and execute <prog> rule
 		if (result = get_next_token(&data->token)) return result;
@@ -191,64 +251,12 @@ int params(PData* data)
 	// <params> -> ( <param> )
 	if (data->token.type == TOKEN_TYPE_LEFT_BRACKET)
 	{
+		// There we will simulate derivation tree via iteration
+
 		// get next token and execute <param> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = param(data)) return result;
-
-		// check for ) token
-		if (data->token.type != TOKEN_TYPE_RIGHT_BRACKET) return SYNTAX_ERR;
-
-		// get next token
-		if (result = get_next_token(&data->token)) return result;
-	}
-
-	// <params> -> ε
-	
-	return SYNTAX_OK;
-}
-
-/**
- * Implementation of <param> rule.
- *
- * @return Given exit code.
- */
-int param(PData* data)
-{
-	int result;
-
-	// <param> -> ID AS TYPE <param_n>
-	if (data->token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
-
-	// get next token and check for AS token
-	if (result = get_next_token(&data->token)) return result;
-	if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_AS) return SYNTAX_ERR;
-
-	// get next token and check for TYPE token
-	if (result = get_next_token(&data->token)) return result;
-	if (data->token.type != TOKEN_TYPE_KEYWORD || !(data->token.attribute.keyword == KEYWORD_INTEGER ||
-		data->token.attribute.keyword == KEYWORD_DOUBLE || data->token.attribute.keyword == KEYWORD_STRING)) return SYNTAX_ERR;
-
-	// get next token and execute <param_n> rule
-	if (result = get_next_token(&data->token)) return result;
-	if (result = param_n(data)) return result;
-
-	return SYNTAX_OK;
-}
-
-/**
- * Implementation of <param_n> rule.
- *
- * @return Given exit code.
- */
-int param_n(PData* data)
-{
-	int result;
-
-	// <param_n> -> , ID AS TYPE <param_n>
-	if (data->token.type == TOKEN_TYPE_COMMA)
-	{
-		// get next token and check for ID token
-		if (result = get_next_token(&data->token)) return result;
+		if (result = get_next_token(&data->token)) return result;	
+		
+		// <param> -> ID AS TYPE <param_n>
 		if (data->token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
 
 		// get next token and check for AS token
@@ -257,16 +265,119 @@ int param_n(PData* data)
 
 		// get next token and check for TYPE token
 		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_KEYWORD || !(data->token.attribute.keyword == KEYWORD_INTEGER ||
-			data->token.attribute.keyword == KEYWORD_DOUBLE || data->token.attribute.keyword == KEYWORD_STRING)) return SYNTAX_ERR;
+		if (data->token.type == TOKEN_TYPE_KEYWORD)
+		{
+			// if we are in definition and in declaration there wasn't any arguments
+			if (!data->add_params_flag && !data->current_id->params->length) return SEM_ERR_TYPE_COMPAT;
+
+			switch (data->token.attribute.keyword)
+			{
+			case KEYWORD_INTEGER:
+				if (data->add_params_flag)
+				{
+					if (!sym_table_add_param(data->current_id, 'i')) return ERROR_OTHER;
+				}
+				else if (data->current_id->params->str[0] != 'i') return SEM_ERR_TYPE_COMPAT;
+				break;
+
+			case KEYWORD_DOUBLE:
+				if (data->add_params_flag)
+				{
+					if (!sym_table_add_param(data->current_id, 'd')) return ERROR_OTHER;
+				}
+				else if (data->current_id->params->str[0] != 'd') return SEM_ERR_TYPE_COMPAT;
+				break;
+
+			case KEYWORD_STRING:
+				if (data->add_params_flag)
+				{
+					if (!sym_table_add_param(data->current_id, 's')) return ERROR_OTHER;
+				}
+				else if (data->current_id->params->str[0] != 's') return SEM_ERR_TYPE_COMPAT;
+				break;
+
+			default:
+				return SYNTAX_ERR;
+			}
+		}
+		else
+			return SYNTAX_ERR;
 
 		// get next token and execute <param_n> rule
 		if (result = get_next_token(&data->token)) return result;
-		if (result = param_n(data)) return result;
+
+		// <param_n> -> , ID AS TYPE <param_n>
+		int index = 1;
+		while (data->token.type == TOKEN_TYPE_COMMA)
+		{
+			// get next token and check for ID token
+			if (result = get_next_token(&data->token)) return result;
+			if (data->token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
+
+			// get next token and check for AS token
+			if (result = get_next_token(&data->token)) return result;
+			if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_AS) return SYNTAX_ERR;
+
+			// get next token and check for TYPE token
+			if (result = get_next_token(&data->token)) return result;
+			if (data->token.type == TOKEN_TYPE_KEYWORD)
+			{
+				// if we are in definition and there is too many arguments
+				if (!data->add_params_flag && data->current_id->params->length == index) return SEM_ERR_TYPE_COMPAT;
+
+				switch (data->token.attribute.keyword)
+				{
+				case KEYWORD_INTEGER:
+					if (data->add_params_flag)
+					{
+						if (!sym_table_add_param(data->current_id, 'i')) return ERROR_OTHER;
+					}
+					else if (data->current_id->params->str[index] != 'i') return SEM_ERR_TYPE_COMPAT;
+					break;
+
+				case KEYWORD_DOUBLE:
+					if (data->add_params_flag)
+					{
+						if (!sym_table_add_param(data->current_id, 'd')) return ERROR_OTHER;
+					}
+					else if (data->current_id->params->str[index] != 'd') return SEM_ERR_TYPE_COMPAT;
+					break;
+
+				case KEYWORD_STRING:
+					if (data->add_params_flag)
+					{
+						if (!sym_table_add_param(data->current_id, 's')) return ERROR_OTHER;
+					}
+					else if (data->current_id->params->str[index] != 's') return SEM_ERR_TYPE_COMPAT;
+					break;
+
+				default:
+					return SYNTAX_ERR;
+				}
+			}
+			else
+				return SYNTAX_ERR;
+
+			// get next token and execute <param_n> rule
+			if (result = get_next_token(&data->token)) return result;
+			index++;
+		}
+
+		// number of defined arguments is different from number of declared
+		if (index != data->current_id->params->length) return SEM_ERR_TYPE_COMPAT;
+
+		// check for ) token
+		if (data->token.type != TOKEN_TYPE_RIGHT_BRACKET) return SYNTAX_ERR;
+
+		// get next token
+		if (result = get_next_token(&data->token)) return result;
 	}
+	else
+		// parameter count missmatch
+		if (data->current_id->params->length) return SEM_ERR_TYPE_COMPAT;
 
-	// <param_n> -> ε
-
+	// <params> -> ε
+	
 	return SYNTAX_OK;
 }
 
@@ -644,6 +755,9 @@ void init_variables(PData* data)
 	
 	sym_table_init(&data->global_table);
 	sym_table_init(&data->local_table);
+
+	data->current_id = NULL;
+	data->add_params_flag = false;
 }
 
 void free_variables(PData* data)

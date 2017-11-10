@@ -29,7 +29,8 @@
  * @struct Item data representation.
  */
 typedef struct htab_listitem_data {
-	int type; /// Data type of symbol / return type of function
+	int type;				/// Data type of symbol / return type of function
+	bool defined;			/// Defined if current function was defined
 	Dynamic_string *params; /// parameters in string form
 } TData;
 

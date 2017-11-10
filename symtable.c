@@ -83,6 +83,7 @@ TData *sym_table_add_symbol(Sym_table *table, const char *key, bool* alloc_faile
 	strcpy(new_item->key, key);
 	new_item->data.type = TYPE_UNDEFINED;
 	new_item->data.params = NULL;
+	new_item->data.defined = false;
 	new_item->next = NULL;
 
 	if (tmp_last == NULL)
