@@ -14,9 +14,9 @@
 #include "analysis.h"
 #include "symtable.h"
 
-#define IS_VALUE(token) token.type == TOKEN_TYPE_DOUBLE_NUMBER || \
-						token.type == TOKEN_TYPE_INT_NUMBER ||	\
-						token.type == TOKEN_TYPE_STRING ||		\
+#define IS_VALUE(token) token.type == TOKEN_TYPE_DOUBLE_NUMBER ||	\
+						token.type == TOKEN_TYPE_INT_NUMBER ||		\
+						token.type == TOKEN_TYPE_STRING ||			\
 						token.type == TOKEN_TYPE_IDENTIFIER
 
 typedef struct parser_internal_data
@@ -38,7 +38,6 @@ typedef struct parser_internal_data
 
 // forward declarations
 int params(PData* data);
-int param(PData* data);
 int param_n(PData* data);
 int statement(PData* data);
 int def_var(PData* data);
@@ -295,10 +294,10 @@ int prog(PData* data)
 //}
 
 /**
-* Implementation of <params> rule.
-*
-* @return Given exit code.
-*/
+ * Implementation of <params> rule.
+ *
+ * @return Given exit code.
+ */
 int params(PData* data)
 {
 	int result;
@@ -388,10 +387,10 @@ int params(PData* data)
 }
 
 /**
-* Implementation of <param_n> rule.
-*
-* @return Given exit code.
-*/
+ * Implementation of <param_n> rule.
+ *
+ * @return Given exit code.
+ */
 int param_n(PData* data)
 {
 	int result;
@@ -932,9 +931,11 @@ int expression(PData* data)
 }
 
 /**
-* Initialize variable needed for analysis. 
-*/
-void init_variables(PData* data)
+ * Initialize variable needed for analysis. 
+ *
+ * @return Exit code
+ */
+int init_variables(PData* data)
 {
 	data->scope_processed = false;
 	data->in_function = false;
@@ -943,9 +944,58 @@ void init_variables(PData* data)
 	sym_table_init(&data->local_table);
 
 	data->current_id = NULL;
+	data->lhs_id = NULL;
+	data->rhs_id = NULL;
+
 	data->in_declaration = false;
+	data->param_index = 0;
+
+	// init default functions
+
+	bool internal_error;
+	TData* id;
+
+	// Length(s As String) As Integer
+	sym_table_add_symbol(&data->global_table, "length", &internal_error);
+	if (internal_error) return ERROR_OTHER;
+
+	id->defined = true;
+	id->type = TYPE_INT;
+	sym_table_add_param(id, TYPE_STRING);
+
+	// SubStr(s As String, i As Integer, n As Integer) As String
+	sym_table_add_symbol(&data->global_table, "substr", &internal_error);
+	if (internal_error) return ERROR_OTHER;
+
+	id->defined = true;
+	id->type = TYPE_STRING;
+	sym_table_add_param(id, TYPE_STRING);
+	sym_table_add_param(id, TYPE_INT);
+	sym_table_add_param(id, TYPE_INT);
+
+	// Asc(s As String, i As Integer) As Integer
+	sym_table_add_symbol(&data->global_table, "asc", &internal_error);
+	if (internal_error) return ERROR_OTHER;
+
+	id->defined = true;
+	id->type = TYPE_INT;
+	sym_table_add_param(id, TYPE_STRING);
+	sym_table_add_param(id, TYPE_INT);
+
+	// Chr(i As Integer) As String
+	sym_table_add_symbol(&data->global_table, "chr", &internal_error);
+	if (internal_error) return ERROR_OTHER;
+
+	id->defined = true;
+	id->type = TYPE_STRING;
+	sym_table_add_param(id, TYPE_INT);
+
+	return 0;
 }
 
+/**
+ * Frees symbol tables
+ */
 void free_variables(PData* data)
 {
 	sym_table_free(&data->global_table);
