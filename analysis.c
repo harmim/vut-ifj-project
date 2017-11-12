@@ -24,7 +24,8 @@ typedef struct parser_internal_data
 	Sym_table local_table;		/// Local symbol table
 
 	TData* current_id;			/// ID of currently processed function
-	bool add_params_flag;			/// Defines if param rule should add or check it's params
+	TData* lhs_id;				/// ID of left-hand-side variable
+	bool add_params_flag;		/// Defines if param rule should add or check it's params
 	int param_index;			/// Index of currently checked param
 } PData;
 
@@ -397,15 +398,44 @@ int statement(PData* data)
 		if (result = get_next_token(&data->token)) return result;
 		if (data->token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
 
+		// add id to the local symbol table
+		bool internal_error;
+		data->lhs_id = sym_table_add_symbol(&data->local_table, data->token.attribute.string->str, &internal_error);
+		if (!data->lhs_id || sym_table_search(&data->global_table, data->token.attribute.string->str))
+		{
+			if (internal_error) return ERROR_OTHER;
+			else return SEM_ERR_UNDEFINED_VAR;
+		}
+
 		// get next token and check for AS token
 		if (result = get_next_token(&data->token)) return result;
 		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_AS) return SYNTAX_ERR;
 
 		// get next token and check for TYPE token
 		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_KEYWORD || !(data->token.attribute.keyword == KEYWORD_INTEGER ||
-			data->token.attribute.keyword == KEYWORD_DOUBLE || data->token.attribute.keyword == KEYWORD_STRING)) return SYNTAX_ERR;
+		if (data->token.type == TOKEN_TYPE_KEYWORD)
+		{
+			switch (data->token.attribute.keyword)
+			{
+			case KEYWORD_INTEGER:
+				data->lhs_id->type = TYPE_INT;
+				break;
 
+			case KEYWORD_DOUBLE:
+				data->lhs_id->type = TYPE_DOUBLE;
+				break;
+
+			case KEYWORD_STRING:
+				data->lhs_id->type = TYPE_STRING;
+				break;
+
+			default:
+				return SYNTAX_ERR;
+			}
+		}
+		else
+			return SYNTAX_ERR;
+		
 		// get next token and execute <def_var> rule
 		if (result = get_next_token(&data->token)) return result;
 		if (result = def_var(data)) return result;
