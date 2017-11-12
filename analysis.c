@@ -25,6 +25,7 @@ typedef struct parser_internal_data
 
 	TData* current_id;			/// ID of currently processed function
 	TData* lhs_id;				/// ID of left-hand-side variable
+	TData* rhs_id;				/// ID of right-hand-side function (expression?)
 	bool add_params_flag;		/// Defines if param rule should add or check it's params
 	int param_index;			/// Index of currently checked param
 } PData;
@@ -524,18 +525,23 @@ int statement(PData* data)
 		return statement(data);
 	}
 
-	// <statement> -> ID = <expression> EOL <statement>
+	// <statement> -> ID = <def_value> EOL <statement>
 	else if (data->token.type == TOKEN_TYPE_IDENTIFIER)
 	{
+		// check for existence of variable
+		data->lhs_id = sym_table_search(&data->local_table, data->token.attribute.string->str);
+		if (!data->lhs_id) return SEM_ERR_UNDEFINED_VAR;
+
 		// get next token and check for = token
 		if (result = get_next_token(&data->token)) return result;
 		if (data->token.type != TOKEN_TYPE_ASSIGN) return SYNTAX_ERR;
 
-		// get next token and execute <expression> rule
+		// get next token and execute <def_value> rule
 		if (result = get_next_token(&data->token)) return result;
-		if (result = expression(data)) return result;
-
-		// check for EOL token
+		if (result = def_value(data)) return result;
+		
+		// get next token and check for EOL token
+		if (result = get_next_token(&data->token)) return result;
 		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
 
 		// get next token and execute <statement> rule
@@ -639,6 +645,15 @@ int def_value(PData* data)
 	// <def_value> -> ID( <arg> )
 	if (data->token.type == TOKEN_TYPE_IDENTIFIER)
 	{
+		data->rhs_id = sym_table_search(&data->global_table, data->token.attribute.string->str);
+		if (!data->rhs_id) return SEM_ERR_UNDEFINED_VAR;
+
+		// check type compatibilty
+		// if either one expression is string, we cannot implicitly convert
+		if (data->lhs_id->type != data->rhs_id->type)
+			if (data->lhs_id->type == TYPE_STRING || data->rhs_id->type == TYPE_STRING)
+				return SEM_ERR_TYPE_COMPAT;
+
 		// get next token and check for ( token
 		if (result = get_next_token(&data->token)) return result;
 		if (data->token.type != TOKEN_TYPE_LEFT_BRACKET) return SYNTAX_ERR;
@@ -649,9 +664,6 @@ int def_value(PData* data)
 
 		// check for ) token
 		if (data->token.type != TOKEN_TYPE_RIGHT_BRACKET) return SYNTAX_ERR;
-
-		// get next token
-		if (result = get_next_token(&data->token)) return result;
 	}
 
 	// <def_value> -> <expression>	
@@ -669,8 +681,14 @@ int arg(PData* data)
 {
 	int result;
 
+	// currently processed argument
+	data->param_index = 0;
+
 	// <arg> -> <value> <arg_n>
 	if (result = value(data)) return result;
+
+	// get next token and execute <arg_n> rule
+	if (result = get_next_token(&data->token)) return result;
 	if (result = arg_n(data)) return result;
 
 	// <arg> -> ε
@@ -713,36 +731,67 @@ int value(PData* data)
 {
 	int result;
 
-	// <value> -> double_value
-	if (data->token.type == TOKEN_TYPE_DOUBLE_NUMBER)
-	{
-		// get next token
-		if (result = get_next_token(&data->token)) return result;
-	}
+	// check number of arguments
+	if (data->rhs_id->params->length == data->param_index)
+		return SEM_ERR_TYPE_COMPAT;
 
-	// <value> -> int_value
-	else if (data->token.type == TOKEN_TYPE_INT_NUMBER)
+	// <value> -> <TYPE>
+	switch (data->token.type)
 	{
-		// get next token
-		if (result = get_next_token(&data->token)) return result;
-	}
-	// <value> -> string
-	else if (data->token.type == TOKEN_TYPE_STRING)
-	{
-		// get next token
-		if (result = get_next_token(&data->token)) return result;
-	}
-	// <value> -> ID
-	else if (data->token.type == TOKEN_TYPE_IDENTIFIER)
-	{
-		// get next token
-		if (result = get_next_token(&data->token)) return result;
-	}
+	case TOKEN_TYPE_DOUBLE_NUMBER:
+		if (data->rhs_id->params->str[data->param_index] == 's')
+			return SEM_ERR_TYPE_COMPAT;
 
-	else
-	{
+		break;
+
+	case TOKEN_TYPE_INT_NUMBER:
+		if (data->rhs_id->params->str[data->param_index] == 's')
+			return SEM_ERR_TYPE_COMPAT;
+
+		break;
+
+	case TOKEN_TYPE_STRING:
+		if (data->rhs_id->params->str[data->param_index] != 's')
+			return SEM_ERR_TYPE_COMPAT;
+
+		break;
+
+	case TOKEN_TYPE_IDENTIFIER:;	// ;	C evil magic
+		TData* id = sym_table_search(&data->local_table, data->token.attribute.string);
+		if (!id) return SEM_ERR_UNDEFINED_VAR;
+
+		switch (id->type)
+		{
+		case TYPE_INT:
+			if (data->rhs_id->params->str[data->param_index] == 's')
+				return SEM_ERR_TYPE_COMPAT;
+
+			break;
+
+		case TYPE_DOUBLE:
+			if (data->rhs_id->params->str[data->param_index] == 's')
+				return SEM_ERR_TYPE_COMPAT;
+
+			break;
+
+		case TYPE_STRING:
+			if (data->rhs_id->params->str[data->param_index] != 's')
+				return SEM_ERR_TYPE_COMPAT;
+
+			break;
+
+		default: // shouldn't get here
+			return ERROR_OTHER;
+		}
+
+		break;
+
+	default:
 		return SYNTAX_ERR;
 	}
+	
+	// increment argument position
+	data->param_index++;
 
 	return SYNTAX_OK;
 }
