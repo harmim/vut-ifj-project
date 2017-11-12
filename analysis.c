@@ -14,6 +14,11 @@
 #include "analysis.h"
 #include "symtable.h"
 
+#define IS_VALUE(token) token.type == TOKEN_TYPE_DOUBLE_NUMBER || \
+						token.type == TOKEN_TYPE_INT_NUMBER ||	\
+						token.type == TOKEN_TYPE_STRING ||		\
+						token.type == TOKEN_TYPE_IDENTIFIER
+
 typedef struct parser_internal_data
 {
 	Token token;				/// Token
@@ -782,11 +787,15 @@ int arg(PData* data)
 	data->param_index = 0;
 
 	// <arg> -> <value> <arg_n>
-	if (result = value(data)) return result;
+	// if token is value
+	if (IS_VALUE(data->token))
+	{
+		if (result = value(data)) return result;
 
-	// get next token and execute <arg_n> rule
-	if (result = get_next_token(&data->token)) return result;
-	if (result = arg_n(data)) return result;
+		// get next token and execute <arg_n> rule
+		if (result = get_next_token(&data->token)) return result;
+		if (result = arg_n(data)) return result;
+	}
 
 	// <arg> -> ε
 
