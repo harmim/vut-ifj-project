@@ -72,7 +72,7 @@ int prog(PData* data)
 		if (result = get_next_token(&data->token)) return result;
 		if (result = statement(data)) return result;
 		// clear local symbol table
-		sym_table_free(data->local_table);
+		sym_table_free(&data->local_table);
 
 		// check for END token
 		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_END) return SYNTAX_ERR;
@@ -103,12 +103,13 @@ int prog(PData* data)
 
 		// add id to the global symbol table
 		bool internal_error; 
-		data->current_id = sym_table_add_symbol(data->global_table, data->token.attribute.string->str, &internal_error);
+		data->current_id = sym_table_add_symbol(&data->global_table, data->token.attribute.string->str, &internal_error);
 		if (!data->current_id)
 		{
 			if (internal_error) return ERROR_OTHER;
 			else return SEM_ERR_UNDEFINED_VAR;
 		}
+		dynamic_string_init(data->current_id->params);
 		
 		// get next token and execute <params> rule
 		data->add_params_flag = true;
