@@ -311,7 +311,7 @@ int params(PData* data)
 		if (!data->in_declaration)
 		{
 			bool internal_error;
-			if (!(id = sym_table_add_symbol(&data->local_table, data->token.attribute.string, &internal_error)))
+			if (!(id = sym_table_add_symbol(&data->local_table, data->token.attribute.string->str, &internal_error)))
 			{
 				if (internal_error) return ERROR_OTHER;
 				else return SEM_ERR_UNDEFINED_VAR;
@@ -408,7 +408,7 @@ int param_n(PData* data)
 		if (!data->in_declaration)
 		{
 			bool internal_error;
-			if (!(id = sym_table_add_symbol(&data->local_table, data->token.attribute.string, &internal_error)))
+			if (!(id = sym_table_add_symbol(&data->local_table, data->token.attribute.string->str, &internal_error)))
 			{
 				if (internal_error) return ERROR_OTHER;
 				else return SEM_ERR_UNDEFINED_VAR;
@@ -834,8 +834,6 @@ int arg_n(PData* data)
  */
 int value(PData* data)
 {
-	int result;
-
 	// check number of arguments
 	if (data->rhs_id->params->length == data->param_index)
 		return SEM_ERR_TYPE_COMPAT;
@@ -862,7 +860,7 @@ int value(PData* data)
 		break;
 
 	case TOKEN_TYPE_IDENTIFIER:;	// ;	C evil magic
-		TData* id = sym_table_search(&data->local_table, data->token.attribute.string);
+		TData* id = sym_table_search(&data->local_table, data->token.attribute.string->str);
 		if (!id) return SEM_ERR_UNDEFINED_VAR;
 
 		switch (id->type)
@@ -956,7 +954,7 @@ int init_variables(PData* data)
 	TData* id;
 
 	// Length(s As String) As Integer
-	sym_table_add_symbol(&data->global_table, "length", &internal_error);
+	id = sym_table_add_symbol(&data->global_table, "length", &internal_error);
 	if (internal_error) return ERROR_OTHER;
 
 	id->defined = true;
@@ -964,7 +962,7 @@ int init_variables(PData* data)
 	sym_table_add_param(id, TYPE_STRING);
 
 	// SubStr(s As String, i As Integer, n As Integer) As String
-	sym_table_add_symbol(&data->global_table, "substr", &internal_error);
+	id = sym_table_add_symbol(&data->global_table, "substr", &internal_error);
 	if (internal_error) return ERROR_OTHER;
 
 	id->defined = true;
@@ -974,7 +972,7 @@ int init_variables(PData* data)
 	sym_table_add_param(id, TYPE_INT);
 
 	// Asc(s As String, i As Integer) As Integer
-	sym_table_add_symbol(&data->global_table, "asc", &internal_error);
+	id = sym_table_add_symbol(&data->global_table, "asc", &internal_error);
 	if (internal_error) return ERROR_OTHER;
 
 	id->defined = true;
@@ -983,7 +981,7 @@ int init_variables(PData* data)
 	sym_table_add_param(id, TYPE_INT);
 
 	// Chr(i As Integer) As String
-	sym_table_add_symbol(&data->global_table, "chr", &internal_error);
+	id = sym_table_add_symbol(&data->global_table, "chr", &internal_error);
 	if (internal_error) return ERROR_OTHER;
 
 	id->defined = true;
