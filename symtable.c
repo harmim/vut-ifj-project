@@ -97,7 +97,7 @@ TData *sym_table_add_symbol(Sym_table *table, const char *key, bool* alloc_faile
 bool sym_table_add_param(TData *data, int data_type)
 {
 	if (data == NULL)
-		return;
+		return false;
 
 	if (data->params == NULL)
 	{
@@ -130,7 +130,7 @@ bool sym_table_add_param(TData *data, int data_type)
 int sym_table_number_of_params(Sym_table *table, const char *key)
 {
 	if (table == NULL || key == NULL)
-		return;
+		return -3;
 
 	TData *data = sym_table_search(table, key);
 
