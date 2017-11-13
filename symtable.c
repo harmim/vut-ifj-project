@@ -79,10 +79,18 @@ TData *sym_table_add_symbol(Sym_table *table, const char *key, bool* alloc_faile
 		*alloc_failed = true;
 		return NULL;
 	}
+	
+	if (!(new_item->data.params = (Dynamic_string *)malloc(sizeof(Dynamic_string))))
+	{
+		free(new_item->key);
+		free(new_item);
+		*alloc_failed = true;
+		return NULL;
+	}
+	dynamic_string_init(new_item->data.params);
 
 	strcpy(new_item->key, key);
 	new_item->data.type = TYPE_UNDEFINED;
-	new_item->data.params = NULL;
 	new_item->data.defined = false;
 	new_item->next = NULL;
 
@@ -98,14 +106,7 @@ bool sym_table_add_param(TData *data, int data_type)
 {
 	if (data == NULL)
 		return false;
-
-	if (data->params == NULL)
-	{
-		if (!(data->params = (Dynamic_string *)malloc(sizeof(Dynamic_string))))
-			return false;
-		dynamic_string_init(data->params);
-	}		
-
+	
 	switch (data_type)
 	{
 	case (TYPE_INT):
