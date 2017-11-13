@@ -5,6 +5,7 @@
  * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
  * @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
  * @author Vojtěch Hertl <xhertl04@stud.fit.vutbr.cz>
+ * @author Matej Karas <xkaras34@stud.fit.vutbr.cz>
  */
 
 
@@ -291,6 +292,7 @@ int get_next_token(Token *token)
 				if (c == '\n')
 				{
 					state = SCANNER_STATE_START;
+					ungetc(c, source_file);
 				}
 
 				break;
