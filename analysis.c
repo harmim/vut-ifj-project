@@ -179,6 +179,13 @@ int prog(PData* data)
 		return SYNTAX_OK;
 	}
 
+	// <prog> -> EOL <prog>
+	else if (data->token.type == TOKEN_TYPE_EOL)
+	{
+		if (result = get_next_token(&data->token)) return result;
+		return prog(data);
+	}
+
 	// <prog> -> FUNCTION ID ( <params> ) AS TYPE EOL <statement> END FUNCTION EOL <prog>
 	else
 	{
