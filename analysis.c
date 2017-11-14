@@ -19,6 +19,78 @@
 						token.type == TOKEN_TYPE_STRING ||			\
 						token.type == TOKEN_TYPE_IDENTIFIER
 
+
+#define GET_TOKEN()													\
+	if (result = get_next_token(&data->token)) return result
+
+#define CHECK_TYPE(_type)											\
+	if (data->token.type != _type) return SYNTAX_ERR
+
+#define CHECK_RULE(rule)											\
+	if (result = rule(data)) return result
+
+#define CHECK_KEYWORD(_keyword)							\
+		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != _keyword) return SYNTAX_ERR
+
+#define GET_TOKEN_AND_CHECK_TYPE(_type)								\
+	do {															\
+		GET_TOKEN();												\
+		CHECK_TYPE(_type);											\
+	} while(0)
+
+#define GET_TOKEN_AND_CHECK_RULE(rule)								\
+	do {															\
+		GET_TOKEN();												\
+		CHECK_RULE(rule);											\
+	} while(0)
+
+#define GET_TOKEN_AND_CHECK_KEYWORD(_keyword)						\
+	do {															\
+		GET_TOKEN();												\
+		CHECK_KEYWORD(_keyword);									\
+	} while(0)
+
+#define CHECK_TYPE_AND_RULE(_type, rule)							\
+	do {															\
+		CHECK_TYPE(_type);											\
+		CHECK_RULE(rule);											\
+	} while(0)
+
+#define GET_TOKEN_AND_CHECK_TYPE_AND_RULE(_type, rule)				\
+	do {															\
+		GET_TOKEN();												\
+		CHECK_TYPE(_type);											\
+		CHECK_RULE(rule);											\
+	} while(0)
+#define UNPACK_VAL(expr, _val)	expr
+
+#define CHECK_DATATYPE(pre_cond, expr, int_val, double_val, str_val)\
+	do																\
+	{																\
+		pre_cond;													\
+		if (data->token.type == TOKEN_TYPE_KEYWORD)					\
+		{															\
+			switch (data->token.attribute.keyword)					\
+			{														\
+			case KEYWORD_INTEGER:									\
+				UNPACK_VAL(expr, int_val);							\
+				break;												\
+																	\
+			case KEYWORD_DOUBLE:									\
+				UNPACK_VAL(expr, double_val);						\
+				break;												\
+																	\
+			case KEYWORD_STRING:									\
+				UNPACK_VAL(expr, string_val);						\
+				break;												\
+																	\
+			default:												\
+				return SYNTAX_ERR;									\
+			}														\
+		}															\
+		else return SYNTAX_ERR;										\
+	} while(0)
+
 typedef struct parser_internal_data
 {
 	Token token;				/// Token
@@ -70,46 +142,29 @@ int prog(PData* data)
 		else
 			data->scope_processed = true;
 
-		// get next token and check EOL token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+		GET_TOKEN_AND_CHECK_RULE(statement);
+		CHECK_KEYWORD(KEYWORD_END);
+		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_SCOPE);
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
-		// get next token and execute <statement> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = statement(data)) return result;
 		// clear local symbol table
 		sym_table_free(&data->local_table);
 
-		// check for END token
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_END) return SYNTAX_ERR;
-
-		// get next token and check for SCOPE token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_SCOPE) return SYNTAX_ERR;
-
-		// get next token and check for EOL token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
-
 		// get next token and execute <prog> rule
-		if (result = get_next_token(&data->token)) return result;
+		GET_TOKEN();
 		return prog(data);
 	}
 
 	// <prog> -> DECLARE FUNCTION ID ( <params> ) AS TYPE EOL <prog>
 	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_DECLARE)
 	{
-		// get next token and check for FUNCTION token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_FUNCTION) return SYNTAX_ERR;
+		data->in_declaration = true;
+		data->non_declared_function = true;
 
-		// get next token and check for ID token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
-
-		// get next token and check for ( token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_LEFT_BRACKET) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_FUNCTION);
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_IDENTIFIER);
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_LEFT_BRACKET);
 		
 		// add id to the global symbol table
 		bool internal_error; 
@@ -119,50 +174,26 @@ int prog(PData* data)
 			if (internal_error) return ERROR_OTHER;
 			else return SEM_ERR_UNDEFINED_VAR;
 		}
-		
-		// get next token and execute <params> rule
-		data->in_declaration = true;
-		data->non_declared_function = true;
-		if (result = get_next_token(&data->token)) return result;
-		if (result = params(data)) return result;
 
-		// check for ) token
-		if (data->token.type != TOKEN_TYPE_RIGHT_BRACKET) return SYNTAX_ERR;
-
-		// get next token and check for AS token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_AS) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_RULE(params);
+		CHECK_TYPE(TOKEN_TYPE_RIGHT_BRACKET);
+		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_AS);
 
 		// get next token and check for TYPE token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type == TOKEN_TYPE_KEYWORD)
-		{
-			switch (data->token.attribute.keyword)
-			{
-			case KEYWORD_INTEGER:
-				data->current_id->type = TYPE_INT; 
-				break;
+		GET_TOKEN();
+		int _val = 0; // Dummy val for macro
+		CHECK_DATATYPE(
+			,
+			data->current_id->type = _val,
+			TYPE_INT,
+			TYPE_DOUBLE,
+			TYPE_STRING
+		);
 
-			case KEYWORD_DOUBLE:
-				data->current_id->type = TYPE_DOUBLE;
-				break;
-
-			case KEYWORD_STRING:
-				data->current_id->type = TYPE_STRING;
-				break;
-
-			default:
-				return SYNTAX_ERR;
-			}
-		}
-		else return SYNTAX_ERR;
-
-		// get next token and check for EOL token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 		
 		// get next token and execute <prog> rule
-		if (result = get_next_token(&data->token)) return result;
+		GET_TOKEN();
 		return prog(data);		
 	}
 
@@ -182,7 +213,7 @@ int prog(PData* data)
 	// <prog> -> EOL <prog>
 	else if (data->token.type == TOKEN_TYPE_EOL)
 	{
-		if (result = get_next_token(&data->token)) return result;
+		GET_TOKEN();
 		return prog(data);
 	}
 
@@ -192,12 +223,8 @@ int prog(PData* data)
 		data->in_function = true;
 		data->in_declaration = false;
 
-		// check for FUNCTION token
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_FUNCTION) return SYNTAX_ERR;
-
-		// get next token and check for ID token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
+		CHECK_KEYWORD(KEYWORD_FUNCTION);
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_IDENTIFIER);
 
 		// if function wasn't declared add it to the global symbol table
 		bool internal_error;
@@ -210,24 +237,14 @@ int prog(PData* data)
 			data->non_declared_function = false;
 			data->current_id = sym_table_search(&data->global_table, data->token.attribute.string->str);
 		}
-		
-		// get next token and check for ( token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_LEFT_BRACKET) return SYNTAX_ERR;
-		
-		// get next token and execute <params> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = params(data)) return result;
 
-		// check for ) token
-		if (data->token.type != TOKEN_TYPE_RIGHT_BRACKET) return SYNTAX_ERR;
-
-		// get next token and check for AS token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_AS) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_LEFT_BRACKET);
+		GET_TOKEN_AND_CHECK_RULE(params);
+		CHECK_TYPE(TOKEN_TYPE_RIGHT_BRACKET);
+		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_AS);
 
 		// get next token and check for TYPE token
-		if (result = get_next_token(&data->token)) return result;
+		GET_TOKEN();
 		if (data->token.type == TOKEN_TYPE_KEYWORD)
 		{
 			switch (data->token.attribute.keyword)
@@ -252,32 +269,20 @@ int prog(PData* data)
 			}
 		}
 
-		// get next token and check for EOL token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
-
-		// get next and execute <statement> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = statement(data)) return result;
-		// clear local symtable
-		sym_table_free(&data->local_table);
-
-		// check for END token
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_END) return SYNTAX_ERR;
-
-		// get next token and check for FUNCTION token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_FUNCTION) return SYNTAX_ERR;
-
-		// get next token and check for EOL token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+		GET_TOKEN_AND_CHECK_RULE(statement);
+		CHECK_KEYWORD(KEYWORD_END);
+		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_FUNCTION);
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
 		// Current function is defined
 		data->current_id->defined = true;
 
+		// clear local symtable
+		sym_table_free(&data->local_table);
+
 		// get next token and execute <prog> rule
-		if (result = get_next_token(&data->token)) return result;
+		GET_TOKEN();
 		return prog(data);
 	}
 
@@ -359,17 +364,9 @@ int params(PData* data)
 			}
 		}
 
-		// get next token and check for AS token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_AS) return SYNTAX_ERR;
-
-		// get next token and execute <type> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = type(data)) return result;
-		
-		// get next token and execute <param_n> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = param_n(data)) return result;
+		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_AS);
+		GET_TOKEN_AND_CHECK_RULE(type);
+		GET_TOKEN_AND_CHECK_RULE(param_n);
 
 		if (data->param_index + 1 != data->current_id->params->length) 
 			return SEM_ERR_TYPE_COMPAT;
@@ -399,9 +396,7 @@ int param_n(PData* data)
 		if (!data->in_declaration && data->param_index == data->current_id->params->length)
 			return SEM_ERR_TYPE_COMPAT;
 
-		// get next token and check for ID token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_IDENTIFIER);
 
 		// if we are in defintion, we need to add ID to the local symbol table
 		if (!data->in_declaration)
@@ -414,16 +409,11 @@ int param_n(PData* data)
 			}
 		}
 
-		// get next token and check for AS token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_AS) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_AS);
+		GET_TOKEN_AND_CHECK_RULE(type);
 
-		// get next token and execute <type> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = type(data)) return result;
-				
 		// get next token and execute <param_n> rule
-		if (result = get_next_token(&data->token)) return result;
+		GET_TOKEN();
 		return param_n(data);
 	}
 
@@ -444,9 +434,7 @@ int statement(PData* data)
 	// <statement> -> DIM ID AS TYPE <def_var> EOL <statement>
 	if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_DIM)
 	{
-		// get next token and check for ID token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_IDENTIFIER);
 
 		// add id to the local symbol table
 		bool internal_error;
@@ -457,12 +445,10 @@ int statement(PData* data)
 			else return SEM_ERR_UNDEFINED_VAR;
 		}
 
-		// get next token and check for AS token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_AS) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_AS);
 
 		// get next token and check for TYPE token
-		if (result = get_next_token(&data->token)) return result;
+		GET_TOKEN();
 		if (data->token.type == TOKEN_TYPE_KEYWORD)
 		{
 			switch (data->token.attribute.keyword)
@@ -486,90 +472,45 @@ int statement(PData* data)
 		else
 			return SYNTAX_ERR;
 		
-		// get next token and execute <def_var> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = def_var(data)) return result;
-
-		// check for EOL token
-		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_RULE(def_var);
+		CHECK_TYPE(TOKEN_TYPE_EOL);
 		
 		// get next token and execute <statement> rule
-		if (result = get_next_token(&data->token)) return result;
+		GET_TOKEN();
 		return statement(data);
 	}
 
 	// <statement> -> IF <expression> THEN EOL <statement> ELSE EOL <statement> END IF EOL <statement>
 	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_IF)
 	{
-		// get next token and execute <expression> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = expression(data)) return result;
-
-		// check for THEN token
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_THEN) return SYNTAX_ERR;
-
-		// get next token and check for EOL token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
-
-		// get next token and execute <statement> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = statement(data)) return result;
-
-		// check for ELSE token
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_ELSE) return SYNTAX_ERR;
-
-		// get next token and check for EOL token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_RULE(expression);
+		CHECK_KEYWORD(KEYWORD_THEN);
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+		GET_TOKEN_AND_CHECK_RULE(statement);
+		CHECK_KEYWORD(KEYWORD_ELSE);
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+		GET_TOKEN_AND_CHECK_RULE(statement);
+		CHECK_KEYWORD(KEYWORD_END);
+		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_IF);
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
 		// get next token and execute <statement> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = statement(data)) return result;
-
-		// check for END token
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_END) return SYNTAX_ERR;
-
-		// get next token and check for IF token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_IF) return SYNTAX_ERR;
-
-		// get next token and check for EOL token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
-
-		// get next token and execute <statement> rule
-		if (result = get_next_token(&data->token)) return result;
+		GET_TOKEN();
 		return statement(data);
 	}
 
 	// <statement> -> DO WHILE <expression> EOL <statement> LOOP EOL <statement>
 	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_DO)
 	{
-		// get next token and check for WHILE token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_WHILE) return SYNTAX_ERR;
-
-		// get next token and execute <expression> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = expression(data)) return result;
-
-		// check for EOL token
-		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_WHILE);
+		GET_TOKEN_AND_CHECK_RULE(expression);
+		CHECK_TYPE(TOKEN_TYPE_EOL);
+		GET_TOKEN_AND_CHECK_RULE(statement);
+		CHECK_KEYWORD(KEYWORD_LOOP);
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
 		// get next token and execute <statement> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = statement(data)) return result;
-
-		// check for LOOP token
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != KEYWORD_LOOP) return SYNTAX_ERR;
-
-		// get next token and check for EOL token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
-
-		// get next token and execute <statement> rule
-		if (result = get_next_token(&data->token)) return result;
+		GET_TOKEN();
 		return statement(data);
 	}
 
@@ -579,62 +520,41 @@ int statement(PData* data)
 		// check for existence of variable
 		data->lhs_id = sym_table_search(&data->local_table, data->token.attribute.string->str);
 		if (!data->lhs_id) return SEM_ERR_UNDEFINED_VAR;
-
-		// get next token and check for = token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_ASSIGN) return SYNTAX_ERR;
-
-		// get next token and execute <def_value> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = def_value(data)) return result;
 		
-		// get next token and check for EOL token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_ASSIGN);
+		GET_TOKEN_AND_CHECK_RULE(def_value);
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
 		// get next token and execute <statement> rule
-		if (result = get_next_token(&data->token)) return result;
+		GET_TOKEN();
 		return statement(data);
 	}
 
 	// <statement> -> INPUT ID EOL <statement>
 	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_INPUT)
 	{
-		// get next token and check for ID token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_IDENTIFIER) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_IDENTIFIER);
 		
 		if (!sym_table_search(&data->local_table, data->token.attribute.string->str))
 			return SEM_ERR_UNDEFINED_VAR;
 
-		// get next token and check for EOL token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
 		// get next token and execute <statement> rule
-		if (result = get_next_token(&data->token)) return result;
+		GET_TOKEN();
 		return statement(data);
 	}
 
 	// <statement> -> PRINT <expression> ; <print> EOL <statement>
 	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_PRINT)
 	{
-		// get next token and execute <expression> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = expression(data)) return result;
-
-		// check for SEMICOLON token
-		if (data->token.type != TOKEN_TYPE_SEMICOLON) return SYNTAX_ERR;
-
-		// get next token and execute <print> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = print(data)) return result;
-
-		// check for EOL token
-		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_RULE(expression);
+		CHECK_TYPE(TOKEN_TYPE_SEMICOLON);
+		GET_TOKEN_AND_CHECK_RULE(print);
+		CHECK_TYPE(TOKEN_TYPE_EOL);
 
 		// get next token and execute <statement> rule
-		if (result = get_next_token(&data->token)) return result;
+		GET_TOKEN();
 		return statement(data);
 	}
 
@@ -644,16 +564,11 @@ int statement(PData* data)
 		// scope doesn't have this type of rule
 		if (!data->in_function) return SEM_ERR_OTHER;
 
-		// get next token and execute <expression> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = expression(data)) return result;
-
-		// check for EOL token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_EOL) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_RULE(expression);
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
 		// get next token and execute <statement> rule
-		if (result = get_next_token(&data->token)) return result;
+		GET_TOKEN();
 		return statement(data);
 	}
 
@@ -674,9 +589,7 @@ int def_var(PData* data)
 	// <def_var> -> = <def_val>
 	if (data->token.type == TOKEN_TYPE_ASSIGN)
 	{
-		// get next token and execute <def_val> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = def_value(data)) return result;
+		GET_TOKEN_AND_CHECK_RULE(def_value);
 	}
 
 	// <def_var> -> ε
@@ -705,20 +618,13 @@ int def_value(PData* data)
 			if (data->lhs_id->type == TYPE_STRING || data->rhs_id->type == TYPE_STRING)
 				return SEM_ERR_TYPE_COMPAT;
 
-		// get next token and check for ( token
-		if (result = get_next_token(&data->token)) return result;
-		if (data->token.type != TOKEN_TYPE_LEFT_BRACKET) return SYNTAX_ERR;
-
-		// get next token and execute <arg> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = arg(data)) return result;
-
-		// check for ) token
-		if (data->token.type != TOKEN_TYPE_RIGHT_BRACKET) return SYNTAX_ERR;
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_LEFT_BRACKET);
+		GET_TOKEN_AND_CHECK_RULE(arg);
+		CHECK_TYPE(TOKEN_TYPE_RIGHT_BRACKET);
 	}
 
 	// <def_value> -> <expression>	
-	if (result = expression(data)) return result;
+	CHECK_RULE(expression);
 
 	return SYNTAX_OK;
 }
@@ -739,11 +645,8 @@ int arg(PData* data)
 	// if token is value
 	if (IS_VALUE(data->token))
 	{
-		if (result = value(data)) return result;
-
-		// get next token and execute <arg_n> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = arg_n(data)) return result;
+		CHECK_RULE(value);
+		GET_TOKEN_AND_CHECK_RULE(arg_n);
 	}
 
 	// <arg> -> ε
@@ -763,13 +666,8 @@ int arg_n(PData* data)
 	// <arg_n> -> , <value> <arg_n>
 	if (data->token.type == TOKEN_TYPE_COMMA)
 	{
-		// get next token and execute <value> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = value(data)) return result;
-
-		// get next token and execute <arg_n> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = arg_n(data)) return result;
+		GET_TOKEN_AND_CHECK_RULE(value);
+		GET_TOKEN_AND_CHECK_RULE(arg_n);
 	}
 
 	// <arg_n> -> ε
@@ -859,13 +757,11 @@ int print(PData* data)
 	int result;
 
 	// <print> -> <expression> ; <print>
-	if (result = expression(data)) return result;
+	CHECK_RULE(expression);
 
 	if (data->token.type == TOKEN_TYPE_SEMICOLON)
 	{
-		// get next token and execute <print> rule
-		if (result = get_next_token(&data->token)) return result;
-		if (result = print(data)) return result;
+		GET_TOKEN_AND_CHECK_RULE(print);
 	}
 
 	// <print> -> ε
