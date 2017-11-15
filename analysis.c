@@ -62,34 +62,6 @@
 		CHECK_TYPE(_type);											\
 		CHECK_RULE(rule);											\
 	} while(0)
-#define UNPACK_VAL(expr, _val)	expr
-
-#define CHECK_DATATYPE(pre_cond, expr, int_val, double_val, str_val)\
-	do																\
-	{																\
-		pre_cond;													\
-		if (data->token.type == TOKEN_TYPE_KEYWORD)					\
-		{															\
-			switch (data->token.attribute.keyword)					\
-			{														\
-			case KEYWORD_INTEGER:									\
-				UNPACK_VAL(expr, int_val);							\
-				break;												\
-																	\
-			case KEYWORD_DOUBLE:									\
-				UNPACK_VAL(expr, double_val);						\
-				break;												\
-																	\
-			case KEYWORD_STRING:									\
-				UNPACK_VAL(expr, string_val);						\
-				break;												\
-																	\
-			default:												\
-				return SYNTAX_ERR;									\
-			}														\
-		}															\
-		else return SYNTAX_ERR;										\
-	} while(0)
 
 typedef struct parser_internal_data
 {
@@ -116,7 +88,7 @@ int statement(PData* data);
 int def_var(PData* data);
 int def_value(PData* data);
 int arg(PData* data);
-int arg_n(PData* data);
+
 int value(PData* data);
 int print(PData* data);
 int expression(PData* data);
@@ -181,14 +153,28 @@ int prog(PData* data)
 
 		// get next token and check for TYPE token
 		GET_TOKEN();
-		int _val = 0; // Dummy val for macro
-		CHECK_DATATYPE(
-			,
-			data->current_id->type = _val,
-			TYPE_INT,
-			TYPE_DOUBLE,
-			TYPE_STRING
-		);
+
+		if (data->token.type == TOKEN_TYPE_KEYWORD)
+		{
+			switch (data->token.attribute.keyword)
+			{
+			case KEYWORD_INTEGER:
+				data->current_id->type = TYPE_INT;
+				break;
+
+			case KEYWORD_DOUBLE:
+				data->current_id->type = TYPE_DOUBLE;
+				break;
+
+			case KEYWORD_STRING:
+				data->current_id->type = TYPE_STRING;
+				break;
+
+			default:
+				return SYNTAX_ERR;
+			}
+		}
+		else return SYNTAX_ERR;
 
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 		
