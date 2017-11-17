@@ -2,6 +2,7 @@
  * Project: Implementace překladače imperativního jazyka IFJ17.
  *
  * @brief Scanner interface.
+ * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
  * @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
  * @author Vojtěch Hertl <xhertl04@stud.fit.vutbr.cz>
  */
@@ -12,14 +13,10 @@
 
 
 #include <stdbool.h>
+#include <stdio.h>
 
+#include "error.h"
 #include "dynamic_string.h"
-
-
-// Error codes.
-#define SCANNER_TOKEN_OK 0 /// Token is OK.
-#define SCANNER_ERROR_LEX 1 /// Lex structure error.
-#define SCANNER_ERROR_INTERNAL 99 /// Internal error, eg. malloc error etc.
 
 
 // Scanner states.
@@ -128,32 +125,43 @@ enum token_type
 /**
  * @union Token attribute.
  */
-union token_attribute
+typedef union token_attribute
 {
-	struct dynamic_string *string; /// String or identifier value.
+	Dynamic_string *string; /// String or identifier value.
 	int integer; /// Integer value.
 	enum keyword keyword; /// Keyword, one of the KEYWORD_... constant
 	double decimal; /// Decimal value.
-};
+} Token_attribute;
 
 /**
  * @struct Token representation.
  */
-typedef struct token_t
+typedef struct token
 {
 	enum token_type type; /// Token type, one of token_type constants.
-	union token_attribute attribute; /// Attribute of token.
-} token;
+	Token_attribute attribute; /// Attribute of token.
+} Token;
 
+/**
+ * Sets source file to be scanned.
+ *
+ * @param f Pointer to source file.
+ */
+void set_source_file(FILE *f);
+
+/**
+ * Sets dynamic string to be written into.
+ *
+ * @param string Pointer to dynamic string.
+ */
+void set_dynamic_string(Dynamic_string *string);
 
 /**
  * This is the main function of scanner, scans token after token and sends it further.
  *
- * @param source_file Source file to be scanned.
  * @param token Pointer to output token.
  * @return 0 (SCANNER_TOKEN_OK) if token is OK, otherwise in case of lex error one of SCANNER_ERROR_... constant.
  */
-int get_next_token(FILE *source_file, token *token);
-
+int get_next_token(Token *token);
 
 #endif //_SCANNER_H

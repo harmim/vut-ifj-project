@@ -68,3 +68,9 @@ ifj17_compiler
 
 # pack
 /xharmi00.tgz
+
+# VisualStudio project files
+/*.vcxproj*
+/*.VC*
+/*.sln
+/CMakeFiles/*

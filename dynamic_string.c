@@ -2,6 +2,7 @@
  * Project: Implementace překladače imperativního jazyka IFJ17.
  *
  * @brief Dynamic string.
+ * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
  * @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
  */
 
@@ -12,14 +13,14 @@
 #include "dynamic_string.h"
 
 
-void dynamic_string_clear(struct dynamic_string *s)
+void dynamic_string_clear(Dynamic_string *s)
 {
 	s->length = 0;
 	s->str[s->length] = '\0';
 }
 
 
-bool dynamic_string_init(struct dynamic_string *s)
+bool dynamic_string_init(Dynamic_string *s)
 {
 	if (!(s->str = (char *) malloc(DYNAMIC_STRING_LEN_INC)))
 	{
@@ -33,13 +34,13 @@ bool dynamic_string_init(struct dynamic_string *s)
 }
 
 
-void dynamic_string_free(struct dynamic_string *s)
+void dynamic_string_free(Dynamic_string *s)
 {
 	free(s->str);
 }
 
 
-bool dynamic_string_add_char(struct dynamic_string *s, char c)
+bool dynamic_string_add_char(Dynamic_string *s, char c)
 {
 	if (s->length + 1 >= s->alloc_size)
 	{
@@ -58,13 +59,13 @@ bool dynamic_string_add_char(struct dynamic_string *s, char c)
 }
 
 
-int dynamic_string_cmp_const_str(struct dynamic_string *dynamic_string, char *const_string)
+int dynamic_string_cmp_const_str(Dynamic_string *dynamic_string, char *const_string)
 {
 	return strcmp(dynamic_string->str, const_string);
 }
 
 
-bool dynamic_string_copy(struct dynamic_string *src, struct dynamic_string *dest)
+bool dynamic_string_copy(Dynamic_string *src, Dynamic_string *dest)
 {
 	unsigned int new_length = src->length;
 	if (new_length >= dest->alloc_size)
