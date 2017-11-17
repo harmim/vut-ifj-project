@@ -15,15 +15,15 @@
 
 #define MAX_SYMTABLE_SIZE 1024 /// Symbol table size
 
-// sybol defines
-#define NONEXISTING_SYMBOL -1 /// Non existing symbol
-#define NOT_FUNCTION -2 /// Symbol is not function
-
 // data types
-#define TYPE_UNDEFINED 0 /// Integer data type
-#define TYPE_INT 1 /// Integer data type
-#define TYPE_DOUBLE 2 /// Double data type
-#define TYPE_STRING 3 /// String data type
+typedef enum data_type_t {
+	TYPE_UNDEFINED,	/// Data type undefined
+	TYPE_INT,		/// Integer data type
+	TYPE_DOUBLE,	/// Double data type
+	TYPE_STRING,	/// String data type
+	TYPE_BOOL,		/// Bool data type (actaully it's kinda imaginary)
+} Data_type;
+
 
 /**
  * @struct Item data representation.
@@ -71,15 +71,6 @@ TData *sym_table_add_symbol(Sym_table *table, const char *key, bool* alloc_faile
  * @return Returns true if adding was succesfull else returns false.
  */
 bool sym_table_add_param(TData *data, int data_type);
-
-/**
- * Function returns number of parameters of function.
- *
- * @param table Pointer to table.
- * @param key Identifier of function or variable.
- * @return (NONEXISTING_SYMBOL) if symbol is not existing or (NOT_FUNCTION) if symbol is not function else returns number of parameters of function.
- */
-int sym_table_number_of_params(Sym_table *table, const char *key);
 
 /**
  * Function finds symbol and renturns its data.

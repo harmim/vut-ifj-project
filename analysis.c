@@ -21,13 +21,13 @@
 
 
 #define GET_TOKEN()													\
-	if (result = get_next_token(&data->token)) return result
+	if ((result = get_next_token(&data->token))) return result
 
 #define CHECK_TYPE(_type)											\
 	if (data->token.type != _type) return SYNTAX_ERR
 
 #define CHECK_RULE(rule)											\
-	if (result = rule(data)) return result
+	if ((result = rule(data))) return result
 
 #define CHECK_KEYWORD(_keyword)							\
 		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != _keyword) return SYNTAX_ERR
@@ -65,19 +65,22 @@
 
 typedef struct parser_internal_data
 {
-	Token token;				/// Token
-	
-	bool scope_processed;		/// Defines if the main scope has been processed
-	bool in_function;			/// Defines if the parser is in function
 	Sym_table global_table;		/// Global symbol table
 	Sym_table local_table;		/// Local symbol table
+
+	Token token;				/// Token
 
 	TData* current_id;			/// ID of currently processed function
 	TData* lhs_id;				/// ID of left-hand-side variable
 	TData* rhs_id;				/// ID of right-hand-side function (expression?)
+
+	Data_type expr_ret_type;	/// Return value of expression rule evaluating
+	unsigned param_index;		/// Index of currently checked param
+	
+	bool scope_processed;		/// Defines if the main scope has been processed
+	bool in_function;			/// Defines if the parser is in function
 	bool in_declaration;		/// Defines if param rule should add or check it's params
 	bool non_declared_function;	/// Function that has been only defined
-	int param_index;			/// Index of currently checked param
 } PData;
 
 
@@ -88,7 +91,7 @@ int statement(PData* data);
 int def_var(PData* data);
 int def_value(PData* data);
 int arg(PData* data);
-
+int arg_n(PData* data);
 int value(PData* data);
 int print(PData* data);
 int expression(PData* data);
@@ -470,6 +473,8 @@ int statement(PData* data)
 	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_IF)
 	{
 		GET_TOKEN_AND_CHECK_RULE(expression);
+		if (data->expr_ret_type != TYPE_BOOL)
+			return SEM_ERR_TYPE_COMPAT;
 		CHECK_KEYWORD(KEYWORD_THEN);
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 		GET_TOKEN_AND_CHECK_RULE(statement);
@@ -490,6 +495,8 @@ int statement(PData* data)
 	{
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_WHILE);
 		GET_TOKEN_AND_CHECK_RULE(expression);
+		if (data->expr_ret_type != TYPE_BOOL)
+			return SEM_ERR_TYPE_COMPAT;
 		CHECK_TYPE(TOKEN_TYPE_EOL);
 		GET_TOKEN_AND_CHECK_RULE(statement);
 		CHECK_KEYWORD(KEYWORD_LOOP);
@@ -551,6 +558,11 @@ int statement(PData* data)
 		if (!data->in_function) return SEM_ERR_OTHER;
 
 		GET_TOKEN_AND_CHECK_RULE(expression);
+
+		if (data->expr_ret_type != data->current_id->type)
+			if (data->lhs_id->type == TYPE_STRING || data->rhs_id->type == TYPE_STRING)
+				return SEM_ERR_TYPE_COMPAT;
+
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
 		// get next token and execute <statement> rule
@@ -767,19 +779,20 @@ int expression(PData* data)
  */
 int init_variables(PData* data)
 {
-	data->scope_processed = false;
-	data->in_function = false;
-	
 	sym_table_init(&data->global_table);
 	sym_table_init(&data->local_table);
-
+	
 	data->current_id = NULL;
 	data->lhs_id = NULL;
 	data->rhs_id = NULL;
 
+	data->expr_ret_type = TYPE_UNDEFINED;
+	data->param_index = 0;
+
+	data->scope_processed = false;
+	data->in_function = false;
 	data->in_declaration = false;
 	data->non_declared_function = false;
-	data->param_index = 0;
 
 	// init default functions
 

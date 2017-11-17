@@ -128,21 +128,6 @@ bool sym_table_add_param(TData *data, int data_type)
 	return true;
 }
 
-int sym_table_number_of_params(Sym_table *table, const char *key)
-{
-	if (table == NULL || key == NULL)
-		return -3;
-
-	TData *data = sym_table_search(table, key);
-
-	if (data == NULL)
-		return NONEXISTING_SYMBOL;
-	if (data->params == NULL)
-		return NOT_FUNCTION;
-
-	return (int)data->params->length;
-}
-
 TData *sym_table_search(Sym_table *table, const char *key)
 {
 	if (table == NULL || key == NULL)
