@@ -15,7 +15,9 @@
 
 #define MAX_SYMTABLE_SIZE 1024 /// Symbol table size
 
-// data types
+/**
+ * @enum Data types.
+ */
 typedef enum data_type_t {
 	TYPE_UNDEFINED,	/// Data type undefined
 	TYPE_INT,		/// Integer data type

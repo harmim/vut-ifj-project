@@ -13,12 +13,12 @@
 #include "symtable.h"
 
 
- /**
-  * Calculates index to table (hash).
-  *
-  * @param str String from which hash will be calculated.
-  * @return Returns calculated hash.
-  */
+/**
+ * Calculates index to table (hash).
+ *
+ * @param str String from which hash will be calculated.
+ * @return Returns calculated hash.
+ */
 unsigned hash_function(const char *str)
 {
 	unsigned int index = 0;
