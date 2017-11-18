@@ -11,8 +11,9 @@
 
 #include "error.h"
 #include "scanner.h"
-#include "analysis.h"
 #include "symtable.h"
+#include "analysis.h"
+#include "expression.h"
 
 #define IS_VALUE(token) token.type == TOKEN_TYPE_DOUBLE_NUMBER ||	\
 						token.type == TOKEN_TYPE_INT_NUMBER ||		\
@@ -495,7 +496,7 @@ int statement(PData* data)
 		
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_ASSIGN);
 		GET_TOKEN_AND_CHECK_RULE(def_value);
-		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+		CHECK_TYPE(TOKEN_TYPE_EOL);
 
 		// get next token and execute <statement> rule
 		GET_TOKEN();
@@ -542,7 +543,7 @@ int statement(PData* data)
 			if (data->lhs_id->type == TYPE_STRING || data->rhs_id->type == TYPE_STRING)
 				return SEM_ERR_TYPE_COMPAT;
 
-		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+		CHECK_TYPE(TOKEN_TYPE_EOL);
 
 		// get next token and execute <statement> rule
 		GET_TOKEN();
@@ -587,17 +588,22 @@ int def_value(PData* data)
 	if (data->token.type == TOKEN_TYPE_IDENTIFIER)
 	{
 		data->rhs_id = sym_table_search(&data->global_table, data->token.attribute.string->str);
-		if (!data->rhs_id) return SEM_ERR_UNDEFINED_VAR;
 
-		// check type compatibilty
-		// if either one expression is string, we cannot implicitly convert
-		if (data->lhs_id->type != data->rhs_id->type)
-			if (data->lhs_id->type == TYPE_STRING || data->rhs_id->type == TYPE_STRING)
-				return SEM_ERR_TYPE_COMPAT;
+		if (data->rhs_id)
+		{
+			// check type compatibilty
+			// if either one expression is string, we cannot implicitly convert
+			if (data->lhs_id->type != data->rhs_id->type)
+				if (data->lhs_id->type == TYPE_STRING || data->rhs_id->type == TYPE_STRING)
+					return SEM_ERR_TYPE_COMPAT;
 
-		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_LEFT_BRACKET);
-		GET_TOKEN_AND_CHECK_RULE(arg);
-		CHECK_TYPE(TOKEN_TYPE_RIGHT_BRACKET);
+			GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_LEFT_BRACKET);
+			GET_TOKEN_AND_CHECK_RULE(arg);
+			CHECK_TYPE(TOKEN_TYPE_RIGHT_BRACKET);
+			GET_TOKEN();
+
+			return SYNTAX_OK;
+		}
 	}
 
 	// <def_value> -> <expression>	
@@ -743,11 +749,6 @@ int print(PData* data)
 
 	// <print> -> ε
 
-	return SYNTAX_OK;
-}
-
-int expression(PData* data)
-{
 	return SYNTAX_OK;
 }
 

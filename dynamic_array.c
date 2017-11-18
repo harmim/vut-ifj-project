@@ -1,3 +1,11 @@
+/**
+ * Project: Implementace pøekladaèe imperativního jazyka IFJ17.
+ *
+ * @brief Dynamic array implementation.
+ * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
+ * @author Matej Karas <xkaras34@stud.fit.vutbr.cz>
+ */
+
 #include "dynamic_array.h"
 #include <stdlib.h>
 
@@ -12,6 +20,8 @@ bool vector_realloc(Vector* vec)
 
 	free(vec->arr);
 	vec->arr = arr;
+
+	return true;
 }
 
 bool vector_init(Vector* vec, unsigned size)
@@ -21,14 +31,13 @@ bool vector_init(Vector* vec, unsigned size)
 
 	vec->alloc_size = size;
 	vec->length = 0;
+
+	return true;
 }
 
 bool vector_push_back(Vector* vec, Token* token)
 {
 	if (vec->length + 1 > vec->alloc_size && !vector_realloc(vec))
-		return false;
-
-	if ((vec->arr[vec->length] = (Token*)malloc(sizeof(Token))) == NULL)
 		return false;
 
 	vec->arr[vec->length].type = token->type;
@@ -82,7 +91,7 @@ bool vector_pop_back(Vector* vec)
 			free(vec->arr[vec->length].attribute.string);
 		}
 
-		free(vec->arr[vec->length]);
+		free(vec->arr);
 
 		vec->length--;
 

@@ -12,6 +12,9 @@
 
 #define SYNTAX_OK 0 /// Syntax is ok.
 
+#include "scanner.h"
+#include "symtable.h"
+
 /**
  * @struct Parser's internal data representation.
  */

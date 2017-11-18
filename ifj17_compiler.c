@@ -6,15 +6,10 @@
  * @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
  */
 
-
-#include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
 
-#include "error.h"
-#include "scanner.h"
 #include "analysis.h"
-#include "symtable.h"
+#include "scanner.h"
 
 /**
  * Main function.
@@ -23,11 +18,14 @@
  */
 int main(void)
 {
+	int result;
 	FILE* file;
 	if (!(file = fopen("test.bas", "r")))
 		return -1;
 	
 	set_source_file(file);
+	result = analyse(); // compilation was successful	
+	fclose(file);
 
-	return analyse(); // compilation was successful
+	return result;
 }

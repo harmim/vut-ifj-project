@@ -23,7 +23,7 @@ typedef enum data_type_t {
 	TYPE_INT,		/// Integer data type
 	TYPE_DOUBLE,	/// Double data type
 	TYPE_STRING,	/// String data type
-	TYPE_BOOL,		/// Bool data type (actaully it's kinda imaginary)
+	TYPE_BOOL		/// Bool data type (actaully it's kinda imaginary)
 } Data_type;
 
 
@@ -81,8 +81,8 @@ bool sym_table_add_param(TData *data, int data_type);
  * @param key Identifier of function or variable.
  * @return NULL if symbol is not existing or pointer to data of symbol if it was successfuly found.
  */
-
 TData *sym_table_search(Sym_table *table, const char *key);
+
 /**
  * Function removes symbol.
  *
