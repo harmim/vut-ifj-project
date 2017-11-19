@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # pouziti:   is_it_ok.sh xlogin01.zip testdir
-#  
+#
 #   - POZOR: obsah adresare zadaneho druhym parametrem bude VYMAZAN!
 #   - rozbali archiv studenta xlogin01.zip do adresare testdir a overi formalni pozadavky pro odevzdani projektu IFJ
 #   - nasledne vyzkousi kompilaci
@@ -26,7 +26,7 @@ fi
 function unpack_archive () {
     local ext=`echo $1 | cut -d . -f 2,3`
   echo -n "Archive extraction: "
-  RETCODE=100  
+  RETCODE=100
     if [[ "$ext" = "zip" ]]; then
         unzip -o $1 >> $LOG 2>&1
     RETCODE=$?
@@ -46,7 +46,7 @@ function unpack_archive () {
     echo "ERROR (code $RETCODE)"
     exit 1
   fi
-} 
+}
 
 # prevod jmen souboru obsahujicich nepovolene znaky
 function to_small () {
@@ -56,7 +56,7 @@ function to_small () {
       echo "ERROR ($1 -> $N)"
       exit 1
     fi
-} 
+}
 
 # flattening aktualniho adresare + to_small
 function flattening () {
@@ -126,7 +126,7 @@ if [[ -f "dokumentace.pdf" ]]; then
   echo "OK"
 else
   echo "ERROR (not found)"
-fi  
+fi
 
 #   4) Priprava kompilace
 remove_CR *.mak *.c *.cpp *.cc *.h *.c++ *.hpp
@@ -143,7 +143,7 @@ if [[ -f Makefile ]]; then
    fi
 else
    echo "ERROR (missing Makefile)"
-   exit 1 
+   exit 1
 fi
 echo "OK"
 
@@ -155,7 +155,7 @@ if [[ -f $EXE ]]; then
 else
   echo "ERROR (not found)"
   exit 1
-fi  
+fi
 
 #    7) Kontrola, ze nebyl vytvoren podadresar
 echo -n "Searching for new subdirectories: "
@@ -194,11 +194,11 @@ if [[ -f rozdeleni ]]; then
       fi
     done
   } < rozdeleni
-  
+
   # kontrola formatu rozdeleni a souctu procent
   if [[ -n $RADEK ]]; then
     echo "ERROR (the last line is not ended properly)"
-  elif [[ $TMP_PROC -ne 100 ]]; then         	
+  elif [[ $TMP_PROC -ne 100 ]]; then
     echo "ERROR (sum != 100%)"
   elif [[ -z $ARCHNAME ]]; then
     echo "ERROR (rozdeleni does not contain the leader's login $NAME)"
@@ -207,7 +207,7 @@ if [[ -f rozdeleni ]]; then
   fi
 
 else
-  echo "ERROR (file not found)" 
+  echo "ERROR (file not found)"
 fi
 
 #   9) Kontrola rozsireni
@@ -216,4 +216,4 @@ if [[ -f rozsireni ]]; then
   echo "Yes"
 else
   echo "No"
-fi 
+fi

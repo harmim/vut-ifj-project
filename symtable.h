@@ -2,6 +2,7 @@
  * Project: Implementace překladače imperativního jazyka IFJ17.
  *
  * @brief Symbol table interface.
+ *
  * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
  * @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
  * @author Matej Karas <xkaras34@stud.fit.vutbr.cz>
@@ -11,14 +12,19 @@
 #ifndef _SYMTABLE_H
 #define _SYMTABLE_H
 
+
 #include "dynamic_string.h"
 
+
+// TODO: asi by mělo být prvočíslo, zjistit optimální velikost
 #define MAX_SYMTABLE_SIZE 1024 /// Symbol table size
+
 
 /**
  * @enum Data types.
  */
-typedef enum data_type_t {
+typedef enum
+{
 	TYPE_UNDEFINED,	/// Data type undefined
 	TYPE_INT,		/// Integer data type
 	TYPE_DOUBLE,	/// Double data type
@@ -26,20 +32,22 @@ typedef enum data_type_t {
 	TYPE_BOOL		/// Bool data type (actaully it's kinda imaginary)
 } Data_type;
 
-
 /**
  * @struct Item data representation.
  */
-typedef struct htab_listitem_data {
-	int type;				/// Data type of symbol / return type of function
+typedef struct
+{
+	Data_type type;			/// Data type of symbol / return type of function
 	bool defined;			/// Defined if current function was defined
 	Dynamic_string *params; /// parameters in string form
+	char *identifier;		/// Data identifier (key).
 } TData;
 
 /**
  * @struct Symbol table item representation.
  */
-typedef struct htab_listitem {
+typedef struct htab_listitem
+{
 	char *key; /// identifier
 	TData data; /// data
 	struct htab_listitem *next; /// ptr to next item
@@ -47,6 +55,7 @@ typedef struct htab_listitem {
 
 // Symbol table
 typedef Sym_table_item* Sym_table[MAX_SYMTABLE_SIZE];
+
 
 /**
  * Initialisation of symbol table.
@@ -98,5 +107,6 @@ bool sym_table_remove_symbol(Sym_table *table, const char *key);
  * @param table Pointer to table.
  */
 void sym_table_free(Sym_table *table);
+
 
 #endif //_SYMTABLE_H

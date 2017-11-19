@@ -2,36 +2,43 @@
  * Project: Implementace překladače imperativního jazyka IFJ17.
  *
  * @brief Syntactical and semantical analysis imeplementation.
+ *
  * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
  * @author Matej Karas <xkaras34@stud.fit.vutbr.cz>
+ * @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
  */
 
 
-#include <stdio.h>
-
+#include "symtable.h"
 #include "error.h"
 #include "scanner.h"
-#include "symtable.h"
 #include "analysis.h"
+#include "code_generator.h"
+#include "dynamic_string.h"
 #include "expression.h"
 
-#define IS_VALUE(token) token.type == TOKEN_TYPE_DOUBLE_NUMBER ||	\
-						token.type == TOKEN_TYPE_INT_NUMBER ||		\
-						token.type == TOKEN_TYPE_STRING ||			\
-						token.type == TOKEN_TYPE_IDENTIFIER
 
+#define IS_VALUE(token)												\
+	(token).type == TOKEN_TYPE_DOUBLE_NUMBER						\
+	|| (token).type == TOKEN_TYPE_INT_NUMBER						\
+	|| (token).type == TOKEN_TYPE_STRING							\
+	|| (token).type == TOKEN_TYPE_IDENTIFIER
 
 #define GET_TOKEN()													\
-	if ((result = get_next_token(&data->token))) return result
+	if ((result = get_next_token(&data->token)) != SCANNER_TOKEN_OK)\
+		return result
 
 #define CHECK_TYPE(_type)											\
-	if (data->token.type != _type) return SYNTAX_ERR
+	if (data->token.type != (_type)) return SYNTAX_ERR
 
 #define CHECK_RULE(rule)											\
 	if ((result = rule(data))) return result
 
-#define CHECK_KEYWORD(_keyword)							\
-		if (data->token.type != TOKEN_TYPE_KEYWORD || data->token.attribute.keyword != _keyword) return SYNTAX_ERR
+#define CHECK_KEYWORD(_keyword)										\
+		if (														\
+			data->token.type != TOKEN_TYPE_KEYWORD					\
+			|| data->token.attribute.keyword != (_keyword)			\
+		) return SYNTAX_ERR
 
 #define GET_TOKEN_AND_CHECK_TYPE(_type)								\
 	do {															\
@@ -51,18 +58,9 @@
 		CHECK_KEYWORD(_keyword);									\
 	} while(0)
 
-#define CHECK_TYPE_AND_RULE(_type, rule)							\
-	do {															\
-		CHECK_TYPE(_type);											\
-		CHECK_RULE(rule);											\
-	} while(0)
+#define GENERATE_CODE(_callback, ...)								\
+	if (!_callback(__VA_ARGS__)) return ERROR_INTERNAL
 
-#define GET_TOKEN_AND_CHECK_TYPE_AND_RULE(_type, rule)				\
-	do {															\
-		GET_TOKEN();												\
-		CHECK_TYPE(_type);											\
-		CHECK_RULE(rule);											\
-	} while(0)
 
 // forward declarations
 int params(PData* data);
@@ -75,6 +73,7 @@ int arg_n(PData* data);
 int value(PData* data);
 int print(PData* data);
 int expression(PData* data);
+
 
 /**
  * Implementation of <prog> rule.
@@ -96,6 +95,8 @@ int prog(PData* data)
 			return SEM_ERR_OTHER;
 		else
 			data->scope_processed = true;
+
+		GENERATE_CODE(generate_main_scope);
 
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 		GET_TOKEN_AND_CHECK_RULE(statement);
@@ -126,7 +127,7 @@ int prog(PData* data)
 		data->current_id = sym_table_add_symbol(&data->global_table, data->token.attribute.string->str, &internal_error);
 		if (!data->current_id)
 		{
-			if (internal_error) return ERROR_OTHER;
+			if (internal_error) return ERROR_INTERNAL;
 			else return SEM_ERR_UNDEFINED_VAR;
 		}
 
@@ -163,7 +164,7 @@ int prog(PData* data)
 		
 		// get next token and execute <prog> rule
 		GET_TOKEN();
-		return prog(data);		
+		return prog(data);
 	}
 
 	// <prog> -> EOF
@@ -175,6 +176,8 @@ int prog(PData* data)
 				if (!it->data.defined) return SEM_ERR_UNDEFINED_VAR;
 
 		if (!data->scope_processed) return SEM_ERR_OTHER;
+
+		GENERATE_CODE(generate_end_of_main_scope);
 
 		return SYNTAX_OK;
 	}
@@ -202,10 +205,12 @@ int prog(PData* data)
 			data->non_declared_function = true;
 		else
 		{
-			if (internal_error) return ERROR_OTHER;
+			if (internal_error) return ERROR_INTERNAL;
 			data->non_declared_function = false;
 			data->current_id = sym_table_search(&data->global_table, data->token.attribute.string->str);
 		}
+
+		GENERATE_CODE(generate_function_head, data->current_id->identifier);
 
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_LEFT_BRACKET);
 		GET_TOKEN_AND_CHECK_RULE(params);
@@ -221,16 +226,22 @@ int prog(PData* data)
 			case KEYWORD_INTEGER:
 				if (!data->non_declared_function && data->current_id->type != TYPE_INT) 
 					return SEM_ERR_TYPE_COMPAT;
+
+				data->current_id->type = TYPE_INT;
 				break;
 
 			case KEYWORD_DOUBLE:
 				if (!data->non_declared_function && data->current_id->type != TYPE_DOUBLE) 
 					return SEM_ERR_TYPE_COMPAT;
+
+				data->current_id->type = TYPE_DOUBLE;
 				break;
 
 			case KEYWORD_STRING:
 				if (!data->non_declared_function && data->current_id->type != TYPE_STRING) 
 					return SEM_ERR_TYPE_COMPAT;
+
+				data->current_id->type = TYPE_STRING;
 				break;
 
 			default:
@@ -238,11 +249,15 @@ int prog(PData* data)
 			}
 		}
 
+		GENERATE_CODE(generate_function_retval, data->current_id->type);
+
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 		GET_TOKEN_AND_CHECK_RULE(statement);
 		CHECK_KEYWORD(KEYWORD_END);
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_FUNCTION);
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+
+		GENERATE_CODE(generate_end_of_function);
 
 		// Current function is defined
 		data->current_id->defined = true;
@@ -258,6 +273,7 @@ int prog(PData* data)
 	return SYNTAX_ERR;
 }
 
+
 /**
  * Implementation of <type> rule.
  *
@@ -272,7 +288,7 @@ int type(PData* data)
 		case KEYWORD_INTEGER:
 			if (data->non_declared_function)
 			{
-				if (!sym_table_add_param(data->current_id, TYPE_INT)) return ERROR_OTHER;
+				if (!sym_table_add_param(data->current_id, TYPE_INT)) return ERROR_INTERNAL;
 			}
 			else if (data->current_id->params->str[data->param_index] != 'i') return SEM_ERR_TYPE_COMPAT;
 
@@ -282,7 +298,7 @@ int type(PData* data)
 		case KEYWORD_DOUBLE:
 			if (data->non_declared_function)
 			{
-				if (!sym_table_add_param(data->current_id, TYPE_DOUBLE)) return ERROR_OTHER;
+				if (!sym_table_add_param(data->current_id, TYPE_DOUBLE)) return ERROR_INTERNAL;
 			}
 			else if (data->current_id->params->str[data->param_index] != 'd') return SEM_ERR_TYPE_COMPAT;
 
@@ -292,7 +308,7 @@ int type(PData* data)
 		case KEYWORD_STRING:
 			if (data->non_declared_function)
 			{
-				if (!sym_table_add_param(data->current_id, TYPE_STRING)) return ERROR_OTHER;
+				if (!sym_table_add_param(data->current_id, TYPE_STRING)) return ERROR_INTERNAL;
 			}
 			else if (data->current_id->params->str[data->param_index] != 's') return SEM_ERR_TYPE_COMPAT;
 
@@ -328,9 +344,11 @@ int params(PData* data)
 			bool internal_error;
 			if (!(data->rhs_id = sym_table_add_symbol(&data->local_table, data->token.attribute.string->str, &internal_error)))
 			{
-				if (internal_error) return ERROR_OTHER;
+				if (internal_error) return ERROR_INTERNAL;
 				else return SEM_ERR_UNDEFINED_VAR;
 			}
+
+			GENERATE_CODE(generate_declare_function_param, data->rhs_id->identifier, data->param_index);
 		}
 
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_AS);
@@ -344,7 +362,7 @@ int params(PData* data)
 		return SEM_ERR_TYPE_COMPAT;
 
 	// <params> -> ε
-		
+
 	return SYNTAX_OK;
 }
 
@@ -362,7 +380,7 @@ int param_n(PData* data)
 	{
 		data->param_index++;
 
-		if (!data->in_declaration && data->param_index == data->current_id->params->length)
+		if (!data->in_declaration && !data->non_declared_function && data->param_index == data->current_id->params->length)
 			return SEM_ERR_TYPE_COMPAT;
 
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_IDENTIFIER);
@@ -373,9 +391,11 @@ int param_n(PData* data)
 			bool internal_error;
 			if (!(data->rhs_id = sym_table_add_symbol(&data->local_table, data->token.attribute.string->str, &internal_error)))
 			{
-				if (internal_error) return ERROR_OTHER;
+				if (internal_error) return ERROR_INTERNAL;
 				else return SEM_ERR_UNDEFINED_VAR;
 			}
+
+			GENERATE_CODE(generate_declare_function_param, data->rhs_id->identifier, data->param_index);
 		}
 
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_AS);
@@ -410,9 +430,11 @@ int statement(PData* data)
 		data->lhs_id = sym_table_add_symbol(&data->local_table, data->token.attribute.string->str, &internal_error);
 		if (!data->lhs_id || sym_table_search(&data->global_table, data->token.attribute.string->str))
 		{
-			if (internal_error) return ERROR_OTHER;
+			if (internal_error) return ERROR_INTERNAL;
 			else return SEM_ERR_UNDEFINED_VAR;
 		}
+
+		GENERATE_CODE(generate_declare_var, data->lhs_id->identifier);
 
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_AS);
 
@@ -440,10 +462,10 @@ int statement(PData* data)
 		}
 		else
 			return SYNTAX_ERR;
-		
+
 		GET_TOKEN_AND_CHECK_RULE(def_var);
 		CHECK_TYPE(TOKEN_TYPE_EOL);
-		
+
 		// get next token and execute <statement> rule
 		GET_TOKEN();
 		return statement(data);
@@ -507,9 +529,16 @@ int statement(PData* data)
 	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_INPUT)
 	{
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_IDENTIFIER);
-		
-		if (!sym_table_search(&data->local_table, data->token.attribute.string->str))
-			return SEM_ERR_UNDEFINED_VAR;
+
+		data->lhs_id = sym_table_search(&data->local_table, data->token.attribute.string->str);
+		if (!data->lhs_id) return SEM_ERR_UNDEFINED_VAR;
+
+		if (data->lhs_id->type != TYPE_INT && data->lhs_id->type != TYPE_DOUBLE && data->lhs_id->type != TYPE_STRING)
+		{
+			return SEM_ERR_OTHER;
+		}
+
+		GENERATE_CODE(generate_input, data->lhs_id->identifier, data->lhs_id->type);
 
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
@@ -525,6 +554,8 @@ int statement(PData* data)
 		CHECK_TYPE(TOKEN_TYPE_SEMICOLON);
 		GET_TOKEN_AND_CHECK_RULE(print);
 		CHECK_TYPE(TOKEN_TYPE_EOL);
+
+		// TODO: generate code
 
 		// get next token and execute <statement> rule
 		GET_TOKEN();
@@ -543,6 +574,8 @@ int statement(PData* data)
 			if (data->lhs_id->type == TYPE_STRING || data->rhs_id->type == TYPE_STRING)
 				return SEM_ERR_TYPE_COMPAT;
 
+		// TODO: generate code
+
 		CHECK_TYPE(TOKEN_TYPE_EOL);
 
 		// get next token and execute <statement> rule
@@ -551,6 +584,11 @@ int statement(PData* data)
 	}
 
 	// <statement> -> ε
+	else if (data->token.type == TOKEN_TYPE_EOL)
+	{
+		GET_TOKEN();
+		return statement(data);
+	}
 
 	return SYNTAX_OK;
 }
@@ -568,6 +606,7 @@ int def_var(PData* data)
 	if (data->token.type == TOKEN_TYPE_ASSIGN)
 	{
 		GET_TOKEN_AND_CHECK_RULE(def_value);
+		GET_TOKEN();
 	}
 
 	// <def_var> -> ε
@@ -597,17 +636,27 @@ int def_value(PData* data)
 				if (data->lhs_id->type == TYPE_STRING || data->rhs_id->type == TYPE_STRING)
 					return SEM_ERR_TYPE_COMPAT;
 
+			GENERATE_CODE(generate_before_pass_params_to_function);
+
 			GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_LEFT_BRACKET);
 			GET_TOKEN_AND_CHECK_RULE(arg);
 			CHECK_TYPE(TOKEN_TYPE_RIGHT_BRACKET);
 			GET_TOKEN();
 
+			if (data->rhs_id->params->length != data->param_index) return SEM_ERR_TYPE_COMPAT;
+
+			GENERATE_CODE(generate_call_function, data->rhs_id->identifier);
+			GENERATE_CODE(generate_function_retval_assign, data->lhs_id->identifier, data->lhs_id->type, data->rhs_id->type);
+
 			return SYNTAX_OK;
 		}
 	}
 
-	// <def_value> -> <expression>	
-	CHECK_RULE(expression);
+	// <def_value> -> <expression>
+	else
+	{
+		CHECK_RULE(expression);
+	}
 
 	return SYNTAX_OK;
 }
@@ -715,7 +764,7 @@ int value(PData* data)
 			break;
 
 		default: // shouldn't get here
-			return ERROR_OTHER;
+			return ERROR_INTERNAL;
 		}
 
 		break;
@@ -723,7 +772,9 @@ int value(PData* data)
 	default:
 		return SYNTAX_ERR;
 	}
-	
+
+	GENERATE_CODE(generate_pass_param_to_function, data->token.type, data->token.attribute, data->param_index);
+
 	// increment argument position
 	data->param_index++;
 
@@ -747,21 +798,24 @@ int print(PData* data)
 		GET_TOKEN_AND_CHECK_RULE(print);
 	}
 
+	// TODO: generate code
+
 	// <print> -> ε
 
 	return SYNTAX_OK;
 }
 
+
 /**
  * Initialize variable needed for analysis. 
  *
- * @return Exit code
+ * @return True if inicialization was successful, false otherwise.
  */
-int init_variables(PData* data)
+static bool init_variables(PData* data)
 {
 	sym_table_init(&data->global_table);
 	sym_table_init(&data->local_table);
-	
+
 	data->current_id = NULL;
 	data->lhs_id = NULL;
 	data->rhs_id = NULL;
@@ -781,68 +835,80 @@ int init_variables(PData* data)
 
 	// Length(s As String) As Integer
 	id = sym_table_add_symbol(&data->global_table, "length", &internal_error);
-	if (internal_error) return ERROR_OTHER;
+	if (internal_error) return false;
 
 	id->defined = true;
 	id->type = TYPE_INT;
-	sym_table_add_param(id, TYPE_STRING);
+	if (!sym_table_add_param(id, TYPE_STRING)) return false;
 
 	// SubStr(s As String, i As Integer, n As Integer) As String
 	id = sym_table_add_symbol(&data->global_table, "substr", &internal_error);
-	if (internal_error) return ERROR_OTHER;
+	if (internal_error) return false;
 
 	id->defined = true;
 	id->type = TYPE_STRING;
-	sym_table_add_param(id, TYPE_STRING);
-	sym_table_add_param(id, TYPE_INT);
-	sym_table_add_param(id, TYPE_INT);
+	if (!sym_table_add_param(id, TYPE_STRING)) return false;
+	if (!sym_table_add_param(id, TYPE_INT)) return false;
+	if (!sym_table_add_param(id, TYPE_INT)) return false;
 
 	// Asc(s As String, i As Integer) As Integer
 	id = sym_table_add_symbol(&data->global_table, "asc", &internal_error);
-	if (internal_error) return ERROR_OTHER;
+	if (internal_error) return false;
 
 	id->defined = true;
 	id->type = TYPE_INT;
-	sym_table_add_param(id, TYPE_STRING);
-	sym_table_add_param(id, TYPE_INT);
+	if (!sym_table_add_param(id, TYPE_STRING)) return false;
+	if (!sym_table_add_param(id, TYPE_INT)) return false;
 
 	// Chr(i As Integer) As String
 	id = sym_table_add_symbol(&data->global_table, "chr", &internal_error);
-	if (internal_error) return ERROR_OTHER;
+	if (internal_error) return false;
 
 	id->defined = true;
 	id->type = TYPE_STRING;
-	sym_table_add_param(id, TYPE_INT);
+	if (!sym_table_add_param(id, TYPE_INT)) return false;
 
-	return 0;
+	return true;
 }
+
 
 /**
  * Frees symbol tables
  */
-void free_variables(PData* data)
+static void free_variables(PData* data)
 {
 	sym_table_free(&data->global_table);
 	sym_table_free(&data->local_table);
 }
 
-int analyse() 
+
+int analyse()
 {
 	int result;
+
 	Dynamic_string string;
-	PData parser_data;
-
-	if (!dynamic_string_init(&string))
-		return ERROR_OTHER;
-
+	if (!dynamic_string_init(&string)) return ERROR_INTERNAL;
 	set_dynamic_string(&string);
-	init_variables(&parser_data);
 
-	if (result = get_next_token(&parser_data.token))
-		fprintf(stderr, "Scanner error!\n");
-	else
+	PData parser_data;
+	if (!init_variables(&parser_data))
+	{
+		dynamic_string_free(&string);
+		return ERROR_INTERNAL;
+	}
+
+	if ((result = get_next_token(&parser_data.token)) == SCANNER_TOKEN_OK)
+	{
+		if (!code_generator_start())
+		{
+			dynamic_string_free(&string);
+			free_variables(&parser_data);
+			return ERROR_INTERNAL;
+		}
+
 		result = prog(&parser_data);
-	
+	}
+
 	dynamic_string_free(&string);
 	free_variables(&parser_data);
 

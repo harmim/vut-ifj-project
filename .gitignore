@@ -74,3 +74,6 @@ ifj17_compiler
 /*.VC*
 /*.sln
 /CMakeFiles/*
+
+# Test source file
+/test.bas
