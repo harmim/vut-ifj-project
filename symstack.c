@@ -1,20 +1,23 @@
 /**
- * Project: Implementace pøekladaèe imperativního jazyka IFJ17.
+ * Project: Implementace pÅ™ekladaÄe imperativnÃ­ho jazyka IFJ17.
  *
  * @brief Stack of symbols implementation.
- * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
+ *
+ * @author Timotej HalÃ¡s <xhalas10@stud.fit.vutbr.cz>
+ * @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
  */
 
 
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "symstack.h"
+
 
 void symbol_stack_init(Symbol_stack* stack)
 {
 	stack->top = NULL;
 }
+
 
 bool symbol_stack_push(Symbol_stack* stack, Prec_table_symbol_enum symbol, Data_type type)
 {
@@ -32,9 +35,10 @@ bool symbol_stack_push(Symbol_stack* stack, Prec_table_symbol_enum symbol, Data_
 	return true;
 }
 
+
 bool symbol_stack_pop(Symbol_stack* stack)
 {
-	if (stack->top != NULL) 
+	if (stack->top != NULL)
 	{
 		Symbol_stack_item* tmp = stack->top;
 		stack->top = tmp->next;
@@ -45,6 +49,7 @@ bool symbol_stack_pop(Symbol_stack* stack)
 	return false;
 }
 
+
 void symbol_stack_pop_count(Symbol_stack* stack, int count)
 {
 	for (int i = 0; i < count; i++)
@@ -52,6 +57,7 @@ void symbol_stack_pop_count(Symbol_stack* stack, int count)
 		symbol_stack_pop(stack);
 	}
 }
+
 
 Symbol_stack_item* symbol_stack_top_terminal(Symbol_stack* stack)
 {
@@ -63,6 +69,7 @@ Symbol_stack_item* symbol_stack_top_terminal(Symbol_stack* stack)
 
 	return NULL;
 }
+
 
 bool symbol_stack_insert_after_top_terminal(Symbol_stack* stack, Prec_table_symbol_enum symbol, Data_type type)
 {
@@ -92,7 +99,7 @@ bool symbol_stack_insert_after_top_terminal(Symbol_stack* stack, Prec_table_symb
 			}
 
 			return true;
-		}		
+		}
 
 		prev = tmp;
 	}
@@ -100,10 +107,12 @@ bool symbol_stack_insert_after_top_terminal(Symbol_stack* stack, Prec_table_symb
 	return false;
 }
 
+
 Symbol_stack_item* symbol_stack_top(Symbol_stack* stack)
 {
-		return stack->top;
+	return stack->top;
 }
+
 
 void symbol_stack_free(Symbol_stack* stack)
 {

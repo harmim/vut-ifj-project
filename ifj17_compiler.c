@@ -10,9 +10,11 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "analysis.h"
 #include "code_generator.h"
+
 
 // TODO: potom odstranit
 #define DEBUG 1

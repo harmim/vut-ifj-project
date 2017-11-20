@@ -9,13 +9,11 @@
  */
 
 
-#include "symtable.h"
+#include "dynamic_string.h"
 #include "error.h"
-#include "scanner.h"
 #include "analysis.h"
 #include "code_generator.h"
-#include "dynamic_string.h"
-#include "expression.h"
+#include "symtable.h"
 
 
 #define IS_VALUE(token)												\
@@ -58,21 +56,17 @@
 		CHECK_KEYWORD(_keyword);									\
 	} while(0)
 
-#define GENERATE_CODE(_callback, ...)								\
-	if (!_callback(__VA_ARGS__)) return ERROR_INTERNAL
-
 
 // forward declarations
-int params(PData* data);
-int param_n(PData* data);
-int statement(PData* data);
-int def_var(PData* data);
-int def_value(PData* data);
-int arg(PData* data);
-int arg_n(PData* data);
-int value(PData* data);
-int print(PData* data);
-int expression(PData* data);
+static int params(PData* data);
+static int param_n(PData* data);
+static int statement(PData* data);
+static int def_var(PData* data);
+static int def_value(PData* data);
+static int arg(PData* data);
+static int arg_n(PData* data);
+static int value(PData* data);
+static int print(PData* data);
 
 
 /**
@@ -80,7 +74,7 @@ int expression(PData* data);
  *
  * @return Given exit code.
  */
-int prog(PData* data)
+static int prog(PData* data)
 {
 	int result;
 
@@ -89,7 +83,9 @@ int prog(PData* data)
 	{
 		// we are in scope
 		data->in_function = false;
-		
+		data->current_id = NULL;
+		data->label_index = 0;
+
 		// program may contain only 1 scope
 		if (data->scope_processed)
 			return SEM_ERR_OTHER;
@@ -194,6 +190,7 @@ int prog(PData* data)
 	{
 		data->in_function = true;
 		data->in_declaration = false;
+		data->label_index = 0;
 
 		CHECK_KEYWORD(KEYWORD_FUNCTION);
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_IDENTIFIER);
@@ -257,7 +254,7 @@ int prog(PData* data)
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_FUNCTION);
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
-		GENERATE_CODE(generate_end_of_function);
+		GENERATE_CODE(generate_end_of_function, data->current_id->identifier);
 
 		// Current function is defined
 		data->current_id->defined = true;
@@ -279,7 +276,7 @@ int prog(PData* data)
  *
  * @return Given exit code.
  */
-int type(PData* data)
+static int type(PData* data)
 {
 	if (data->token.type == TOKEN_TYPE_KEYWORD)
 	{
@@ -330,7 +327,7 @@ int type(PData* data)
  *
  * @return Given exit code.
  */
-int params(PData* data)
+static int params(PData* data)
 {
 	int result;
 	data->param_index = 0;
@@ -371,7 +368,7 @@ int params(PData* data)
  *
  * @return Given exit code.
  */
-int param_n(PData* data)
+static int param_n(PData* data)
 {
 	int result;
 
@@ -416,7 +413,7 @@ int param_n(PData* data)
  *
  * @return Given exit code.
  */
-int statement(PData* data)
+static int statement(PData* data)
 {
 	int result;
 
@@ -474,18 +471,38 @@ int statement(PData* data)
 	// <statement> -> IF <expression> THEN EOL <statement> ELSE EOL <statement> END IF EOL <statement>
 	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_IF)
 	{
+		data->label_deep++;
+
+		data->lhs_id = sym_table_search(&data->global_table, "%exp_result");
+		if (!data->lhs_id) return SEM_ERR_UNDEFINED_VAR;
+		data->lhs_id->type = TYPE_BOOL;
+
+		char *function_id = data->current_id ? data->current_id->identifier : "";
+
+		GENERATE_CODE(generate_if_head);
+
 		GET_TOKEN_AND_CHECK_RULE(expression);
-		if (data->expr_ret_type != TYPE_BOOL)
-			return SEM_ERR_TYPE_COMPAT;
 		CHECK_KEYWORD(KEYWORD_THEN);
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+
+		GENERATE_CODE(generate_if_start, function_id, data->label_index, data->label_deep);
+
 		GET_TOKEN_AND_CHECK_RULE(statement);
 		CHECK_KEYWORD(KEYWORD_ELSE);
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+
+		GENERATE_CODE(generate_if_else_part, function_id, data->label_index++, data->label_deep);
+
 		GET_TOKEN_AND_CHECK_RULE(statement);
+
 		CHECK_KEYWORD(KEYWORD_END);
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_IF);
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+
+		GENERATE_CODE(generate_if_end, function_id, data->label_index++, data->label_deep);
+
+		data->label_deep--;
+		data->label_index = 0;
 
 		// get next token and execute <statement> rule
 		GET_TOKEN();
@@ -495,14 +512,31 @@ int statement(PData* data)
 	// <statement> -> DO WHILE <expression> EOL <statement> LOOP EOL <statement>
 	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_DO)
 	{
+		data->label_deep++;
+
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_WHILE);
+
+		data->lhs_id = sym_table_search(&data->global_table, "%exp_result");
+		if (!data->lhs_id) return SEM_ERR_UNDEFINED_VAR;
+		data->lhs_id->type = TYPE_BOOL;
+
+		char *function_id = data->current_id ? data->current_id->identifier : "";
+
+		GENERATE_CODE(generate_while_head, function_id, data->label_index++, data->label_deep);
+
 		GET_TOKEN_AND_CHECK_RULE(expression);
-		if (data->expr_ret_type != TYPE_BOOL)
-			return SEM_ERR_TYPE_COMPAT;
 		CHECK_TYPE(TOKEN_TYPE_EOL);
+
+		GENERATE_CODE(generate_while_start, function_id, data->label_index, data->label_deep);
+
 		GET_TOKEN_AND_CHECK_RULE(statement);
 		CHECK_KEYWORD(KEYWORD_LOOP);
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+
+		GENERATE_CODE(generate_while_end, function_id, data->label_index++, data->label_deep);
+
+		data->label_deep--;
+		data->label_index = 0;
 
 		// get next token and execute <statement> rule
 		GET_TOKEN();
@@ -550,12 +584,17 @@ int statement(PData* data)
 	// <statement> -> PRINT <expression> ; <print> EOL <statement>
 	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_PRINT)
 	{
+		data->lhs_id = sym_table_search(&data->global_table, "%exp_result");
+		if (!data->lhs_id) return SEM_ERR_UNDEFINED_VAR;
+		data->lhs_id->type = TYPE_UNDEFINED;
+
 		GET_TOKEN_AND_CHECK_RULE(expression);
 		CHECK_TYPE(TOKEN_TYPE_SEMICOLON);
+
+		GENERATE_CODE(generate_print);
+
 		GET_TOKEN_AND_CHECK_RULE(print);
 		CHECK_TYPE(TOKEN_TYPE_EOL);
-
-		// TODO: generate code
 
 		// get next token and execute <statement> rule
 		GET_TOKEN();
@@ -568,13 +607,13 @@ int statement(PData* data)
 		// scope doesn't have this type of rule
 		if (!data->in_function) return SEM_ERR_OTHER;
 
+		data->lhs_id = sym_table_search(&data->global_table, "%exp_result");
+		if (!data->lhs_id) return SEM_ERR_UNDEFINED_VAR;
+		data->lhs_id->type = data->current_id->type;
+
 		GET_TOKEN_AND_CHECK_RULE(expression);
 
-		if (data->expr_ret_type != data->current_id->type)
-			if (data->lhs_id->type == TYPE_STRING || data->rhs_id->type == TYPE_STRING)
-				return SEM_ERR_TYPE_COMPAT;
-
-		// TODO: generate code
+		GENERATE_CODE(generate_function_return, data->current_id->identifier);
 
 		CHECK_TYPE(TOKEN_TYPE_EOL);
 
@@ -598,7 +637,7 @@ int statement(PData* data)
  *
  * @return Given exit code.
  */
-int def_var(PData* data)
+static int def_var(PData* data)
 {
 	int result;
 
@@ -606,7 +645,6 @@ int def_var(PData* data)
 	if (data->token.type == TOKEN_TYPE_ASSIGN)
 	{
 		GET_TOKEN_AND_CHECK_RULE(def_value);
-		GET_TOKEN();
 	}
 
 	// <def_var> -> ε
@@ -619,7 +657,7 @@ int def_var(PData* data)
  *
  * @return Given exit code.
  */
-int def_value(PData* data)
+static int def_value(PData* data)
 {
 	int result;
 
@@ -653,10 +691,7 @@ int def_value(PData* data)
 	}
 
 	// <def_value> -> <expression>
-	else
-	{
-		CHECK_RULE(expression);
-	}
+	CHECK_RULE(expression);
 
 	return SYNTAX_OK;
 }
@@ -666,7 +701,7 @@ int def_value(PData* data)
  *
  * @return Given exit code.
  */
-int arg(PData* data)
+static int arg(PData* data)
 {
 	int result;
 
@@ -691,7 +726,7 @@ int arg(PData* data)
  *
  * @return Given exit code.
  */
-int arg_n(PData* data)
+static int arg_n(PData* data)
 {
 	int result;
 
@@ -712,7 +747,7 @@ int arg_n(PData* data)
  *
  * @return Given exit code.
  */
-int value(PData* data)
+static int value(PData* data)
 {
 	// check number of arguments
 	if (data->rhs_id->params->length == data->param_index)
@@ -773,7 +808,7 @@ int value(PData* data)
 		return SYNTAX_ERR;
 	}
 
-	GENERATE_CODE(generate_pass_param_to_function, data->token.type, data->token.attribute, data->param_index);
+	GENERATE_CODE(generate_pass_param_to_function, data->token, data->param_index);
 
 	// increment argument position
 	data->param_index++;
@@ -786,21 +821,27 @@ int value(PData* data)
  *
  * @return Given exit code.
  */
-int print(PData* data)
+static int print(PData* data)
 {
 	int result;
 
-	// <print> -> <expression> ; <print>
-	CHECK_RULE(expression);
-
-	if (data->token.type == TOKEN_TYPE_SEMICOLON)
+	// <print> -> ε
+	if (data->token.type == TOKEN_TYPE_EOL)
 	{
-		GET_TOKEN_AND_CHECK_RULE(print);
+		return SYNTAX_OK;
 	}
 
-	// TODO: generate code
+	data->lhs_id = sym_table_search(&data->global_table, "%exp_result");
+	if (!data->lhs_id) return SEM_ERR_UNDEFINED_VAR;
+	data->lhs_id->type = TYPE_UNDEFINED;
 
-	// <print> -> ε
+	// <print> -> <expression> ; <print>
+	CHECK_RULE(expression);
+	CHECK_TYPE(TOKEN_TYPE_SEMICOLON);
+
+	GENERATE_CODE(generate_print);
+
+	GET_TOKEN_AND_CHECK_RULE(print);
 
 	return SYNTAX_OK;
 }
@@ -820,8 +861,9 @@ static bool init_variables(PData* data)
 	data->lhs_id = NULL;
 	data->rhs_id = NULL;
 
-	data->expr_ret_type = TYPE_UNDEFINED;
 	data->param_index = 0;
+	data->label_index = 0;
+	data->label_deep = 0;
 
 	data->scope_processed = false;
 	data->in_function = false;
@@ -867,6 +909,13 @@ static bool init_variables(PData* data)
 	id->defined = true;
 	id->type = TYPE_STRING;
 	if (!sym_table_add_param(id, TYPE_INT)) return false;
+
+	// Global variable %exp_result for storing result of expression.
+	id = sym_table_add_symbol(&data->global_table, "%exp_result", &internal_error);
+	if (internal_error) return false;
+	id->defined = true;
+	id->type = TYPE_UNDEFINED;
+	id->global = true;
 
 	return true;
 }

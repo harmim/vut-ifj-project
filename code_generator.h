@@ -16,6 +16,7 @@
 
 #include "symtable.h"
 #include "scanner.h"
+#include "expression.h"
 
 
 #define MAX_TERM_DIGITS 40 /// Maximum digits terms.
@@ -47,7 +48,7 @@ bool generate_end_of_main_scope();
 
 bool generate_function_head(char *function_id);
 
-bool generate_end_of_function();
+bool generate_end_of_function(char *function_id);
 
 bool generate_function_retval(Data_type type);
 
@@ -61,9 +62,39 @@ bool generate_declare_function_param(char *var_id, int index);
 
 bool generate_before_pass_params_to_function();
 
-bool generate_pass_param_to_function(Token_type type, Token_attribute attribute, int index);
+bool generate_pass_param_to_function(Token token, int index);
 
 bool generate_input(char *var_id, Data_type type);
+
+bool generate_push(Token token);
+
+bool generate_stack_operation(Prec_rules_enum rule);
+
+bool generate_concat_stack_strings();
+
+bool generate_save_expression_result(char *var_id, Data_type ret_type, Data_type l_type, char *frame);
+
+bool generate_stack_op1_to_double();
+
+bool generate_stack_op2_to_double();
+
+bool generate_print();
+
+bool generate_function_return(char *function_id);
+
+bool generate_if_head();
+
+bool generate_if_start(char *function_id, int label_index, int label_deep);
+
+bool generate_if_else_part(char *function_id, int label_index, int label_deep);
+
+bool generate_if_end(char *function_id, int label_index, int label_deep);
+
+bool generate_while_head(char *function_id, int label_index, int label_deep);
+
+bool generate_while_start(char *function_id, int prev_label_index, int label_deep);
+
+bool generate_while_end(char *function_id, int label_index, int label_deep);
 
 
 #endif //_CODE_GENERATOR_H

@@ -2,6 +2,7 @@
  * Project: Implementace překladače imperativního jazyka IFJ17.
  *
  * @brief Scanner interface.
+ *
  * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
  * @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
  * @author Vojtěch Hertl <xhertl04@stud.fit.vutbr.cz>

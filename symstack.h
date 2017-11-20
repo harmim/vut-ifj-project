@@ -1,16 +1,22 @@
 /**
- * Project: Implementace p¯ekladaËe imperativnÌho jazyka IFJ17.
+ * Project: Implementace p≈ôekladaƒçe imperativn√≠ho jazyka IFJ17.
  *
  * @brief Stack of tokens interface.
- * @author Timotej Hal·s <xhalas10@stud.fit.vutbr.cz>
+ *
+ * @author Timotej Hal√°s <xhalas10@stud.fit.vutbr.cz>
+ * @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
  */
 
 
 #ifndef _SYMSTACK_H
 #define _SYMSTACK_H
 
+
+#include <stdbool.h>
+
 #include "expression.h"
 #include "symtable.h"
+
 
 /**
  * @struct Stack item represetation.
@@ -25,10 +31,11 @@ typedef struct stack_item
 /**
  * @struct Stack representation.
  */
-typedef struct stack
+typedef struct
 {
 	Symbol_stack_item *top; /// Pointer to stack item on top of stack.
 } Symbol_stack;
+
 
 /**
  * Function initializes stack.
@@ -95,5 +102,6 @@ Symbol_stack_item* symbol_stack_top(Symbol_stack* stack);
  * @param stack Pointer to stack.
  */
 void symbol_stack_free(Symbol_stack* stack);
+
 
 #endif //_SYMSTACK_H
