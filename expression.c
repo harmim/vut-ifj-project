@@ -367,20 +367,27 @@ static int check_semantics(Prec_rules_enum rule, Symbol_stack_item* op1, Symbol_
 	case NT_PLUS_NT:
 	case NT_MINUS_NT:
 	case NT_MUL_NT:
-		*final_type = TYPE_DOUBLE;
 		if (op1->data_type == TYPE_STRING && op3->data_type == TYPE_STRING && rule == NT_PLUS_NT)
+		{
 			*final_type = TYPE_STRING;
+			break;
+		}
 
 		if (op1->data_type == TYPE_INT && op3->data_type == TYPE_INT)
+		{
 			*final_type = TYPE_INT;
+			break;
+		}
 
-		if ((op1->data_type == TYPE_STRING || op3->data_type == TYPE_STRING) && rule != NT_PLUS_NT)
+		if (op1->data_type == TYPE_STRING || op3->data_type == TYPE_STRING)
 			return SEM_ERR_TYPE_COMPAT;
 
-		if (op1->data_type == TYPE_INT && op3->data_type == TYPE_DOUBLE)
+		*final_type = TYPE_DOUBLE;
+
+		if (op1->data_type == TYPE_INT)
 			retype_op1 = true;
 
-		if (op1->data_type == TYPE_DOUBLE && op3->data_type == TYPE_INT)
+		if (op3->data_type == TYPE_INT)
 			retype_op3 = true;
 
 		break;
@@ -568,8 +575,6 @@ int expression(PData* data)
 	Symbol_stack_item* final_non_terminal = symbol_stack_top(&stack);
 	if (final_non_terminal == NULL)
 		FREE_RESOURCES_RETURN(ERROR_INTERNAL);
-	if (final_non_terminal->symbol == DOLLAR)
-		FREE_RESOURCES_RETURN(SYNTAX_OK);
 	if (final_non_terminal->symbol != NON_TERM)
 		FREE_RESOURCES_RETURN(SYNTAX_ERR);
 

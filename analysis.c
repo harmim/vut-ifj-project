@@ -245,6 +245,8 @@ static int prog(PData* data)
 				return SYNTAX_ERR;
 			}
 		}
+		else
+			return SYNTAX_ERR;
 
 		GENERATE_CODE(generate_function_retval, data->current_id->type);
 
@@ -332,7 +334,7 @@ static int params(PData* data)
 	int result;
 	data->param_index = 0;
 
-	// <params> -> ID AS TYPE <param_n>
+	// <params> -> ID AS <type> <param_n>
 	if (data->token.type == TOKEN_TYPE_IDENTIFIER)
 	{
 		// if we are in defintion, we need to add parameters to the local symbol table
@@ -372,7 +374,7 @@ static int param_n(PData* data)
 {
 	int result;
 
-	// <param_n> -> , ID AS TYPE <param_n>
+	// <param_n> -> , ID AS <type> <param_n>
 	if (data->token.type == TOKEN_TYPE_COMMA)
 	{
 		data->param_index++;
@@ -420,6 +422,8 @@ static int statement(PData* data)
 	// <statement> -> DIM ID AS TYPE <def_var> EOL <statement>
 	if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_DIM)
 	{
+		if (data->in_while_or_if) return SYNTAX_ERR;
+
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_IDENTIFIER);
 
 		// add id to the local symbol table
@@ -472,6 +476,7 @@ static int statement(PData* data)
 	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_IF)
 	{
 		data->label_deep++;
+		data->in_while_or_if = true;
 
 		data->lhs_id = sym_table_search(&data->global_table, "%exp_result");
 		if (!data->lhs_id) return SEM_ERR_UNDEFINED_VAR;
@@ -486,7 +491,7 @@ static int statement(PData* data)
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
 		GENERATE_CODE(generate_if_start, function_id, data->label_index, data->label_deep);
-
+		
 		GET_TOKEN_AND_CHECK_RULE(statement);
 		CHECK_KEYWORD(KEYWORD_ELSE);
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
@@ -503,6 +508,7 @@ static int statement(PData* data)
 
 		data->label_deep--;
 		data->label_index = 0;
+		data->in_while_or_if = false;
 
 		// get next token and execute <statement> rule
 		GET_TOKEN();
@@ -513,6 +519,7 @@ static int statement(PData* data)
 	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_DO)
 	{
 		data->label_deep++;
+		data->in_while_or_if = true;
 
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_WHILE);
 
@@ -530,6 +537,7 @@ static int statement(PData* data)
 		GENERATE_CODE(generate_while_start, function_id, data->label_index, data->label_deep);
 
 		GET_TOKEN_AND_CHECK_RULE(statement);
+
 		CHECK_KEYWORD(KEYWORD_LOOP);
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
@@ -537,6 +545,7 @@ static int statement(PData* data)
 
 		data->label_deep--;
 		data->label_index = 0;
+		data->in_while_or_if = false;
 
 		// get next token and execute <statement> rule
 		GET_TOKEN();
@@ -605,7 +614,7 @@ static int statement(PData* data)
 	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_RETURN)
 	{
 		// scope doesn't have this type of rule
-		if (!data->in_function) return SEM_ERR_OTHER;
+		if (!data->in_function) return SYNTAX_ERR;
 
 		data->lhs_id = sym_table_search(&data->global_table, "%exp_result");
 		if (!data->lhs_id) return SEM_ERR_UNDEFINED_VAR;
@@ -753,27 +762,30 @@ static int value(PData* data)
 	if (data->rhs_id->params->length == data->param_index)
 		return SEM_ERR_TYPE_COMPAT;
 
-	// <value> -> <TYPE>
 	switch (data->token.type)
 	{
+	// <value> -> DOUBLE_NUMBER
 	case TOKEN_TYPE_DOUBLE_NUMBER:
 		if (data->rhs_id->params->str[data->param_index] == 's')
 			return SEM_ERR_TYPE_COMPAT;
 
 		break;
 
+	// <value> -> INT_NUMBER
 	case TOKEN_TYPE_INT_NUMBER:
 		if (data->rhs_id->params->str[data->param_index] == 's')
 			return SEM_ERR_TYPE_COMPAT;
 
 		break;
 
+	// <value> -> STRING
 	case TOKEN_TYPE_STRING:
 		if (data->rhs_id->params->str[data->param_index] != 's')
 			return SEM_ERR_TYPE_COMPAT;
 
 		break;
 
+	// <value> -> IDENTIFIER
 	case TOKEN_TYPE_IDENTIFIER:;	// ;	C evil magic
 		TData* id = sym_table_search(&data->local_table, data->token.attribute.string->str);
 		if (!id) return SEM_ERR_UNDEFINED_VAR;
@@ -868,6 +880,7 @@ static bool init_variables(PData* data)
 	data->scope_processed = false;
 	data->in_function = false;
 	data->in_declaration = false;
+	data->in_while_or_if = false;
 	data->non_declared_function = false;
 
 	// init default functions
