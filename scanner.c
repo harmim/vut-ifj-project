@@ -291,7 +291,7 @@ int get_next_token(Token *token)
 				break;
 
 			case (SCANNER_STATE_COMMENTARY):
-				if (c == '\n')
+				if (c == '\n' || c == EOF)
 				{
 					state = SCANNER_STATE_START;
 					ungetc(c, source_file);
@@ -306,6 +306,7 @@ int get_next_token(Token *token)
 				}
 				else
 				{
+                    ungetc(c, source_file);
 					token->type = TOKEN_TYPE_DIV;
 					return free_resources(SCANNER_TOKEN_OK, str);
 				}
