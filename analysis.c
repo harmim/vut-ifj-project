@@ -78,7 +78,7 @@ static int prog(PData* data)
 {
 	int result;
 
-	// <prog> -> SCOPE EOL <statement> END SCOPE EOL <prog>
+	// <prog> -> SCOPE EOL <statement> END SCOPE <prog>
 	if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_SCOPE)
 	{
 		// we are in scope
@@ -98,7 +98,6 @@ static int prog(PData* data)
 		GET_TOKEN_AND_CHECK_RULE(statement);
 		CHECK_KEYWORD(KEYWORD_END);
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_SCOPE);
-//		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
 		GENERATE_CODE(generate_end_of_main_scope);
 
@@ -110,7 +109,7 @@ static int prog(PData* data)
 		return prog(data);
 	}
 
-	// <prog> -> DECLARE FUNCTION ID ( <params> ) AS TYPE EOL <prog>
+	// <prog> -> DECLARE FUNCTION ID ( <params> ) AS TYPE <prog>
 	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_DECLARE)
 	{
 		data->in_declaration = true;
@@ -157,8 +156,6 @@ static int prog(PData* data)
 			}
 		}
 		else return SYNTAX_ERR;
-
-//		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 		
 		// get next token and execute <prog> rule
 		GET_TOKEN();
@@ -185,7 +182,7 @@ static int prog(PData* data)
 		return prog(data);
 	}
 
-	// <prog> -> FUNCTION ID ( <params> ) AS TYPE EOL <statement> END FUNCTION EOL <prog>
+	// <prog> -> FUNCTION ID ( <params> ) AS TYPE EOL <statement> END FUNCTION <prog>
 	else
 	{
 		data->in_function = true;
@@ -254,7 +251,6 @@ static int prog(PData* data)
 		GET_TOKEN_AND_CHECK_RULE(statement);
 		CHECK_KEYWORD(KEYWORD_END);
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_FUNCTION);
-//		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
 		GENERATE_CODE(generate_end_of_function, data->current_id->identifier);
 
