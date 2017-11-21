@@ -98,7 +98,9 @@ static int prog(PData* data)
 		GET_TOKEN_AND_CHECK_RULE(statement);
 		CHECK_KEYWORD(KEYWORD_END);
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_SCOPE);
-		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+//		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+
+		GENERATE_CODE(generate_end_of_main_scope);
 
 		// clear local symbol table
 		sym_table_free(&data->local_table);
@@ -156,7 +158,7 @@ static int prog(PData* data)
 		}
 		else return SYNTAX_ERR;
 
-		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+//		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 		
 		// get next token and execute <prog> rule
 		GET_TOKEN();
@@ -172,8 +174,6 @@ static int prog(PData* data)
 				if (!it->data.defined) return SEM_ERR_UNDEFINED_VAR;
 
 		if (!data->scope_processed) return SEM_ERR_OTHER;
-
-		GENERATE_CODE(generate_end_of_main_scope);
 
 		return SYNTAX_OK;
 	}
@@ -254,7 +254,7 @@ static int prog(PData* data)
 		GET_TOKEN_AND_CHECK_RULE(statement);
 		CHECK_KEYWORD(KEYWORD_END);
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_FUNCTION);
-		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+//		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
 		GENERATE_CODE(generate_end_of_function, data->current_id->identifier);
 
@@ -483,6 +483,8 @@ static int statement(PData* data)
 		data->lhs_id->type = TYPE_BOOL;
 
 		char *function_id = data->current_id ? data->current_id->identifier : "";
+		int current_label_index = data->label_index;
+		data->label_index += 2;
 
 		GENERATE_CODE(generate_if_head);
 
@@ -490,13 +492,13 @@ static int statement(PData* data)
 		CHECK_KEYWORD(KEYWORD_THEN);
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
-		GENERATE_CODE(generate_if_start, function_id, data->label_index, data->label_deep);
-		
+		GENERATE_CODE(generate_if_start, function_id, current_label_index, data->label_deep);
+
 		GET_TOKEN_AND_CHECK_RULE(statement);
 		CHECK_KEYWORD(KEYWORD_ELSE);
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
-		GENERATE_CODE(generate_if_else_part, function_id, data->label_index++, data->label_deep);
+		GENERATE_CODE(generate_if_else_part, function_id, current_label_index, data->label_deep);
 
 		GET_TOKEN_AND_CHECK_RULE(statement);
 
@@ -504,10 +506,9 @@ static int statement(PData* data)
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_IF);
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
-		GENERATE_CODE(generate_if_end, function_id, data->label_index++, data->label_deep);
+		GENERATE_CODE(generate_if_end, function_id, current_label_index + 1, data->label_deep);
 
 		data->label_deep--;
-		data->label_index = 0;
 		data->in_while_or_if = false;
 
 		// get next token and execute <statement> rule
@@ -528,23 +529,24 @@ static int statement(PData* data)
 		data->lhs_id->type = TYPE_BOOL;
 
 		char *function_id = data->current_id ? data->current_id->identifier : "";
+		int current_label_index = data->label_index;
+		data->label_index += 2;
 
-		GENERATE_CODE(generate_while_head, function_id, data->label_index++, data->label_deep);
+		GENERATE_CODE(generate_while_head, function_id, current_label_index, data->label_deep);
 
 		GET_TOKEN_AND_CHECK_RULE(expression);
 		CHECK_TYPE(TOKEN_TYPE_EOL);
 
-		GENERATE_CODE(generate_while_start, function_id, data->label_index, data->label_deep);
+		GENERATE_CODE(generate_while_start, function_id, current_label_index + 1, data->label_deep);
 
 		GET_TOKEN_AND_CHECK_RULE(statement);
 
 		CHECK_KEYWORD(KEYWORD_LOOP);
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 
-		GENERATE_CODE(generate_while_end, function_id, data->label_index++, data->label_deep);
+		GENERATE_CODE(generate_while_end, function_id, current_label_index + 1, data->label_deep);
 
 		data->label_deep--;
-		data->label_index = 0;
 		data->in_while_or_if = false;
 
 		// get next token and execute <statement> rule
@@ -875,7 +877,7 @@ static bool init_variables(PData* data)
 
 	data->param_index = 0;
 	data->label_index = 0;
-	data->label_deep = 0;
+	data->label_deep = -1;
 
 	data->scope_processed = false;
 	data->in_function = false;
