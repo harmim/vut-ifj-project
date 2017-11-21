@@ -77,3 +77,6 @@ ifj17_compiler
 
 # Test source file
 /test.bas
+
+# Logs from IFJcode17-toolkit tests
+/log/
