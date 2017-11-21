@@ -7,6 +7,8 @@
  */
 
 
+#include <ctype.h>
+
 #include "dynamic_string.h"
 #include "scanner.h"
 #include "code_generator.h"
@@ -317,7 +319,8 @@ bool generate_before_pass_params_to_function()
 
 static bool generate_literal(Token token)
 {
-	char term_str[MAX_TERM_DIGITS], c;
+	char term_str[MAX_TERM_DIGITS];
+	unsigned char c;
 	Dynamic_string tmp_string;
 	dynamic_string_init(&tmp_string);
 
@@ -334,9 +337,9 @@ static bool generate_literal(Token token)
 			break;
 
 		case TOKEN_TYPE_STRING:
-			for (int i = 0; (c = (token.attribute.string->str)[i]) != '\0'; i++)
+			for (int i = 0; (c = (unsigned char) (token.attribute.string->str)[i]) != '\0'; i++)
 			{
-				if (c == '#' || c == '\\' || c <= 32)
+				if (c == '#' || c == '\\' || c <= 32 || !isprint(c))
 				{
 					dynamic_string_add_char(&tmp_string, '\\');
 					sprintf(term_str, "%03d", c);
