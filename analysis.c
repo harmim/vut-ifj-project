@@ -655,6 +655,10 @@ static int def_var(PData* data)
 	}
 
 	// <def_var> -> ε
+	else
+	{
+		GENERATE_CODE(generate_var_default_value, data->lhs_id->identifier, data->lhs_id->type);
+	}
 
 	return SYNTAX_OK;
 }

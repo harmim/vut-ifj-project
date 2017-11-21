@@ -54,6 +54,8 @@ bool generate_function_retval(Data_type type);
 
 bool generate_declare_var(char *var_id);
 
+bool generate_var_default_value(char *var_id, Data_type type);
+
 bool generate_call_function(char *function_id);
 
 bool generate_function_retval_assign(char *l_val_id, Data_type l_type, Data_type ret_type);

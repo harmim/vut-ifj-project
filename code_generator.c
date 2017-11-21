@@ -236,11 +236,8 @@ bool generate_end_of_function(char *function_id)
 }
 
 
-bool generate_function_retval(Data_type type)
+static bool generate_default_var_value(Data_type type)
 {
-	ADD_INST("DEFVAR LF@%retval");
-
-	ADD_CODE("MOVE LF@%retval ");
 	switch (type)
 	{
 		case TYPE_INT:
@@ -258,6 +255,17 @@ bool generate_function_retval(Data_type type)
 		default:
 			break;
 	}
+
+	return true;
+}
+
+
+bool generate_function_retval(Data_type type)
+{
+	ADD_INST("DEFVAR LF@%retval");
+
+	ADD_CODE("MOVE LF@%retval ");
+	if (!generate_default_var_value(type)) return false;
 	ADD_CODE("\n");
 
 	return true;
@@ -267,6 +275,16 @@ bool generate_function_retval(Data_type type)
 bool generate_declare_var(char *var_id)
 {
 	ADD_CODE("DEFVAR LF@"); ADD_CODE(var_id); ADD_CODE("\n");
+
+	return true;
+}
+
+
+bool generate_var_default_value(char *var_id, Data_type type)
+{
+	ADD_CODE("MOVE LF@"); ADD_CODE(var_id); ADD_CODE(" ");
+	if (!generate_default_var_value(type)) return false;
+	ADD_CODE("\n");
 
 	return true;
 }
