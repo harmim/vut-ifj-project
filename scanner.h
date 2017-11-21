@@ -2,6 +2,7 @@
  * Project: Implementace překladače imperativního jazyka IFJ17.
  *
  * @brief Scanner interface.
+ *
  * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
  * @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
  * @author Vojtěch Hertl <xhertl04@stud.fit.vutbr.cz>
@@ -12,10 +13,8 @@
 #define _SCANNER_H
 
 
-#include <stdbool.h>
 #include <stdio.h>
 
-#include "error.h"
 #include "dynamic_string.h"
 
 
@@ -48,11 +47,10 @@
 /**
  * @enum Reserved keywords.
  */
-enum keyword
+typedef enum
 {
 	KEYWORD_AND,
 	KEYWORD_AS,
-	KEYWORD_ASC,
 	KEYWORD_BOOLEAN,
 	KEYWORD_CONTINUE,
 	KEYWORD_DECLARE,
@@ -65,12 +63,10 @@ enum keyword
 	KEYWORD_EXIT,
 	KEYWORD_FALSE,
 	KEYWORD_FOR,
-	KEYWORD_CHR,
 	KEYWORD_FUNCTION,
 	KEYWORD_IF,
 	KEYWORD_INPUT,
 	KEYWORD_INTEGER,
-	KEYWORD_LENGTH,
 	KEYWORD_LOOP,
 	KEYWORD_NEXT,
 	KEYWORD_NOT,
@@ -81,16 +77,15 @@ enum keyword
 	KEYWORD_SHARED,
 	KEYWORD_STRING,
 	KEYWORD_STATIC,
-	KEYWORD_SUBSTR,
 	KEYWORD_THEN,
 	KEYWORD_TRUE,
 	KEYWORD_WHILE,
-};
+} Keyword;
 
 /**
  * @enum Type of token.
  */
-enum token_type
+typedef enum
 {
 	TOKEN_TYPE_EOF, /// End of file
 	TOKEN_TYPE_EOL, /// End of line
@@ -120,27 +115,28 @@ enum token_type
 	TOKEN_TYPE_RIGHT_BRACKET, /// Right bracket )
 	TOKEN_TYPE_COMMA, /// Comma ,
 	TOKEN_TYPE_SEMICOLON, /// Semicolon ;
-};
+} Token_type;
 
 /**
  * @union Token attribute.
  */
-typedef union token_attribute
+typedef union
 {
 	Dynamic_string *string; /// String or identifier value.
 	int integer; /// Integer value.
-	enum keyword keyword; /// Keyword, one of the KEYWORD_... constant
+	Keyword keyword; /// Keyword, one of the KEYWORD_... constant
 	double decimal; /// Decimal value.
 } Token_attribute;
 
 /**
  * @struct Token representation.
  */
-typedef struct token
+typedef struct
 {
-	enum token_type type; /// Token type, one of token_type constants.
+	Token_type type; /// Token type, one of token_type constants.
 	Token_attribute attribute; /// Attribute of token.
 } Token;
+
 
 /**
  * Sets source file to be scanned.
@@ -163,5 +159,6 @@ void set_dynamic_string(Dynamic_string *string);
  * @return 0 (SCANNER_TOKEN_OK) if token is OK, otherwise in case of lex error one of SCANNER_ERROR_... constant.
  */
 int get_next_token(Token *token);
+
 
 #endif //_SCANNER_H

@@ -2,6 +2,7 @@
  * Project: Implementace překladače imperativního jazyka IFJ17.
  *
  * @brief Symbol table implementation using hash table.
+ *
  * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
  * @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
  */
@@ -15,22 +16,30 @@
 
 /**
  * Calculates index to table (hash).
+ * GNU Hash ELF. Algorithm implementation used in UNIX ELF.
+ * @link https://blogs.oracle.com/ali/gnu-hash-elf-sections
+ * @link https://en.wikipedia.org/wiki/PJW_hash_function
  *
  * @param str String from which hash will be calculated.
  * @return Returns calculated hash.
  */
-unsigned hash_function(const char *str)
+static unsigned long hash_function(const char *str)
 {
-	unsigned int index = 0;
-	const unsigned char *char_ptr;
+	unsigned long hash = 0, x = 0;
 
-	for (char_ptr = (const unsigned char*)str; *char_ptr != '\0'; char_ptr++)
+	for (char c = *str; c != '\0'; c = *(++str))
 	{
-		index = 65599 * index + *char_ptr;
+		hash = (hash << 4) + c;
+		if ((x = hash & 0xF0000000L) != 0)
+		{
+			hash ^= (x >> 24);
+		}
+		hash &= ~x;
 	}
 
-	return index % MAX_SYMTABLE_SIZE;
+	return hash % MAX_SYMTABLE_SIZE;
 }
+
 
 void sym_table_init(Sym_table *table)
 {
@@ -54,11 +63,13 @@ TData *sym_table_add_symbol(Sym_table *table, const char *key, bool* alloc_faile
 		return NULL;
 	}
 
-	unsigned index = hash_function(key);
+	unsigned long index = hash_function(key);
 	Sym_table_item *tmp_last = NULL;
 
-	for (Sym_table_item *tmp = (*table)[index]; tmp != NULL; tmp = tmp->next) {
-		if (!strcmp(key, tmp->key)) {
+	for (Sym_table_item *tmp = (*table)[index]; tmp != NULL; tmp = tmp->next)
+	{
+		if (!strcmp(key, tmp->key))
+		{
 			return NULL;
 		}
 
@@ -72,14 +83,12 @@ TData *sym_table_add_symbol(Sym_table *table, const char *key, bool* alloc_faile
 		return NULL;
 	}
 
-	new_item->key = (char *)malloc((strlen(key) + 1) * sizeof(char));
-
-	if (new_item->key == NULL) {
+	if (!(new_item->key = (char *)malloc((strlen(key) + 1) * sizeof(char))))
+	{
 		free(new_item);
 		*alloc_failed = true;
 		return NULL;
 	}
-	
 	if (!(new_item->data.params = (Dynamic_string *)malloc(sizeof(Dynamic_string))))
 	{
 		free(new_item->key);
@@ -87,11 +96,20 @@ TData *sym_table_add_symbol(Sym_table *table, const char *key, bool* alloc_faile
 		*alloc_failed = true;
 		return NULL;
 	}
-	dynamic_string_init(new_item->data.params);
+	if (!dynamic_string_init(new_item->data.params))
+	{
+		free(new_item->key);
+		free(new_item);
+		free(new_item->data.params);
+		*alloc_failed = true;
+		return NULL;
+	}
 
 	strcpy(new_item->key, key);
+	new_item->data.identifier = new_item->key;
 	new_item->data.type = TYPE_UNDEFINED;
 	new_item->data.defined = false;
+	new_item->data.global = false;
 	new_item->next = NULL;
 
 	if (tmp_last == NULL)
@@ -102,23 +120,33 @@ TData *sym_table_add_symbol(Sym_table *table, const char *key, bool* alloc_faile
 	return &new_item->data;
 }
 
+
 bool sym_table_add_param(TData *data, int data_type)
 {
 	if (data == NULL)
 		return false;
-	
+
 	switch (data_type)
 	{
 	case (TYPE_INT):
-		dynamic_string_add_char(data->params, 'i');
+		if (!dynamic_string_add_char(data->params, 'i'))
+		{
+			return false;
+		}
 		break;
 
 	case (TYPE_DOUBLE):
-		dynamic_string_add_char(data->params, 'd');
+		if (!dynamic_string_add_char(data->params, 'd'))
+		{
+			return false;
+		}
 		break;
 
 	case (TYPE_STRING):
-		dynamic_string_add_char(data->params, 's');
+		if (!dynamic_string_add_char(data->params, 's'))
+		{
+			return false;
+		}
 		break;
 
 	default:
@@ -128,15 +156,18 @@ bool sym_table_add_param(TData *data, int data_type)
 	return true;
 }
 
+
 TData *sym_table_search(Sym_table *table, const char *key)
 {
 	if (table == NULL || key == NULL)
 		return NULL;
 
-	unsigned index = hash_function(key);
+	unsigned long index = hash_function(key);
 
-	for (Sym_table_item *tmp = (*table)[index]; tmp != NULL; tmp = tmp->next) {
-		if (!strcmp(key, tmp->key)) {
+	for (Sym_table_item *tmp = (*table)[index]; tmp != NULL; tmp = tmp->next)
+	{
+		if (!strcmp(key, tmp->key))
+		{
 			return &tmp->data;
 		}
 	}
@@ -144,16 +175,18 @@ TData *sym_table_search(Sym_table *table, const char *key)
 	return NULL;
 }
 
+
 bool sym_table_remove_symbol(Sym_table *table, const char *key)
 {
 	if (table == NULL || key == NULL)
 		return false;
 
-	unsigned index = hash_function(key);
+	unsigned long index = hash_function(key);
 
 	Sym_table_item *tmp_last = NULL;
 
-	for (Sym_table_item *tmp = (*table)[index]; tmp != NULL; tmp = tmp->next) {
+	for (Sym_table_item *tmp = (*table)[index]; tmp != NULL; tmp = tmp->next)
+	{
 		if (!strcmp(key, tmp->key)) 
 		{
 			if (tmp_last == NULL) 
@@ -183,6 +216,7 @@ bool sym_table_remove_symbol(Sym_table *table, const char *key)
 	return false;
 }
 
+
 void sym_table_free(Sym_table *table)
 {
 	if (table == NULL)
@@ -190,8 +224,10 @@ void sym_table_free(Sym_table *table)
 
 	Sym_table_item *tmp_next = NULL;
 
-	for (int i = 0; i < MAX_SYMTABLE_SIZE; i++) {
-		for (Sym_table_item *tmp = (*table)[i]; tmp != NULL; tmp = tmp_next) {
+	for (int i = 0; i < MAX_SYMTABLE_SIZE; i++)
+	{
+		for (Sym_table_item *tmp = (*table)[i]; tmp != NULL; tmp = tmp_next)
+		{
 			tmp_next = tmp->next;
 			free(tmp->key);
 

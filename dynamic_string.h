@@ -2,6 +2,7 @@
  * Project: Implementace překladače imperativního jazyka IFJ17.
  *
  * @brief Dynamic string interface.
+ *
  * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
  * @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
  */
@@ -20,7 +21,7 @@
 /**
  * @struct Representation of dynamic string.
  */
-typedef struct dynamic_string
+typedef struct
 {
 	char *str; /// string ened by '\0' byte
 	unsigned int length; /// lenght of string
@@ -60,13 +61,22 @@ void dynamic_string_clear(Dynamic_string *s);
 bool dynamic_string_add_char(Dynamic_string *s, char c);
 
 /**
+ * Add constant string to the end of dynamic string.
+ *
+ * @param s Dynamic string.
+ * @param const_string Constant string.
+ * @return True if it was successful, false otherwise.
+ */
+bool dynamic_string_add_const_str(Dynamic_string *s, const char *const_string);
+
+/**
  * Compare dynamic string with constant string.
  *
- * @param s1 Dynamic string.
- * @param s2 Constant string.
+ * @param dynamic_string Dynamic string.
+ * @param const_string Constant string.
  * @return Returns 1, 0, or -1, according as the s1 is greater than, equal to, or less than the s2.
  */
-int dynamic_string_cmp_const_str(Dynamic_string *dynamic_string, char *const_string);
+int dynamic_string_cmp_const_str(Dynamic_string *dynamic_string, const char *const_string);
 
 /**
  * Copy src string to dest string.

@@ -2,7 +2,7 @@
 
 DOC = dokumentace
 
-IMG_DIR = img
+INC_DIR = inc
 
 
 $(DOC).pdf: $(DOC).tex
@@ -21,4 +21,4 @@ bibtex: $(DOC).bib
 clean:
 	rm -f $(DOC).aux $(DOC).dvi $(DOC).log $(DOC).ps $(DOC).synctex.gz \
 		$(DOC).fls $(DOC).fdb_latexmk $(DOC).bbl $(DOC).blg $(DOC).out \
-		$(IMG_DIR)/*-eps-converted-to* $(DOC).toc
+		$(INC_DIR)/*-eps-converted-to* $(DOC).toc
