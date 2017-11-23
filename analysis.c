@@ -735,9 +735,13 @@ static int def_value(PData* data)
 
 			return SYNTAX_OK;
 		}
+
+		data->rhs_id = sym_table_search(&data->local_table, data->token.attribute.string->str);
+		if (!data->rhs_id)
+			return SEM_ERR_UNDEFINED_VAR;
 	}
 
-	// <def_value> -> <expression>
+	// <def_value> -> <expression>	
 	CHECK_RULE(expression);
 
 	return SYNTAX_OK;
