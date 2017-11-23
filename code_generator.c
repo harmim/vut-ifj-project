@@ -96,7 +96,7 @@
 	"\n DEFVAR LF@%retval"													\
 	"\n MOVE LF@%retval int@0"												\
 	"\n DEFVAR LF@cond_length"												\
-	"\n LT LF@cond_length LF@%1 int@0"										\
+	"\n LT LF@cond_length LF@%1 int@1"										\
 	"\n JUMPIFEQ $asc$return LF@cond_length bool@true"						\
 	"\n DEFVAR LF@length_str"												\
 	"\n CREATEFRAME"														\
@@ -104,9 +104,9 @@
 	"\n MOVE TF@%0 LF@%0"													\
 	"\n CALL $length"														\
 	"\n MOVE LF@length_str TF@%retval"										\
-	"\n SUB LF@length_str LF@length_str int@1"								\
 	"\n GT LF@cond_length LF@%1 LF@length_str"								\
 	"\n JUMPIFEQ $asc$return LF@cond_length bool@true"						\
+	"\n SUB LF@%1 LF@%1 int@1"												\
 	"\n STRI2INT LF@%retval LF@%0 LF@%1"									\
 	"\n LABEL $asc$return"													\
 	"\n POPFRAME"															\
