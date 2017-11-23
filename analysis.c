@@ -219,21 +219,21 @@ static int prog(PData* data)
 			{
 			case KEYWORD_INTEGER:
 				if (!data->non_declared_function && data->current_id->type != TYPE_INT) 
-					return SEM_ERR_TYPE_COMPAT;
+					return SEM_ERR_UNDEFINED_VAR;
 
 				data->current_id->type = TYPE_INT;
 				break;
 
 			case KEYWORD_DOUBLE:
 				if (!data->non_declared_function && data->current_id->type != TYPE_DOUBLE) 
-					return SEM_ERR_TYPE_COMPAT;
+					return SEM_ERR_UNDEFINED_VAR;
 
 				data->current_id->type = TYPE_DOUBLE;
 				break;
 
 			case KEYWORD_STRING:
 				if (!data->non_declared_function && data->current_id->type != TYPE_STRING) 
-					return SEM_ERR_TYPE_COMPAT;
+					return SEM_ERR_UNDEFINED_VAR;
 
 				data->current_id->type = TYPE_STRING;
 				break;
@@ -285,7 +285,7 @@ static int type(PData* data)
 			{
 				if (!sym_table_add_param(data->current_id, TYPE_INT)) return ERROR_INTERNAL;
 			}
-			else if (data->current_id->params->str[data->param_index] != 'i') return SEM_ERR_TYPE_COMPAT;
+			else if (data->current_id->params->str[data->param_index] != 'i') return SEM_ERR_UNDEFINED_VAR;
 
 			if (!data->in_declaration) data->rhs_id->type = TYPE_INT;
 			break;
@@ -295,7 +295,7 @@ static int type(PData* data)
 			{
 				if (!sym_table_add_param(data->current_id, TYPE_DOUBLE)) return ERROR_INTERNAL;
 			}
-			else if (data->current_id->params->str[data->param_index] != 'd') return SEM_ERR_TYPE_COMPAT;
+			else if (data->current_id->params->str[data->param_index] != 'd') return SEM_ERR_UNDEFINED_VAR;
 
 			if (!data->in_declaration) data->rhs_id->type = TYPE_DOUBLE;
 			break;
@@ -305,7 +305,7 @@ static int type(PData* data)
 			{
 				if (!sym_table_add_param(data->current_id, TYPE_STRING)) return ERROR_INTERNAL;
 			}
-			else if (data->current_id->params->str[data->param_index] != 's') return SEM_ERR_TYPE_COMPAT;
+			else if (data->current_id->params->str[data->param_index] != 's') return SEM_ERR_UNDEFINED_VAR;
 
 			if (!data->in_declaration) data->rhs_id->type = TYPE_STRING;
 			break;
@@ -351,10 +351,10 @@ static int params(PData* data)
 		GET_TOKEN_AND_CHECK_RULE(param_n);
 
 		if (data->param_index + 1 != data->current_id->params->length) 
-			return SEM_ERR_TYPE_COMPAT;
+			return SEM_ERR_UNDEFINED_VAR;
 	} 
 	else if (!data->in_declaration && data->current_id->params->length)
-		return SEM_ERR_TYPE_COMPAT;
+		return SEM_ERR_UNDEFINED_VAR;
 
 	// <params> -> ε
 
@@ -376,7 +376,7 @@ static int param_n(PData* data)
 		data->param_index++;
 
 		if (!data->in_declaration && !data->non_declared_function && data->param_index == data->current_id->params->length)
-			return SEM_ERR_TYPE_COMPAT;
+			return SEM_ERR_UNDEFINED_VAR;
 
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_IDENTIFIER);
 
