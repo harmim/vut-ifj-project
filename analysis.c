@@ -333,6 +333,10 @@ static int params(PData* data)
 	// <params> -> ID AS <type> <param_n>
 	if (data->token.type == TOKEN_TYPE_IDENTIFIER)
 	{
+		// if there is function named as parameter
+		if (sym_table_search(&data->global_table, data->token.attribute.string->str))
+			return SEM_ERR_UNDEFINED_VAR;
+
 		// if we are in defintion, we need to add parameters to the local symbol table
 		if (!data->in_declaration)
 		{
