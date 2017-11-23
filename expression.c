@@ -567,7 +567,7 @@ int expression(PData* data)
 			if (actual_symbol == DOLLAR && top_stack_terminal->symbol == DOLLAR)
 				success = true;
 			else
-				FREE_RESOURCES_RETURN(result);
+				FREE_RESOURCES_RETURN(SYNTAX_ERR);
 			break;
 		}
 	} while (!success);
