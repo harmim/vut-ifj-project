@@ -306,7 +306,7 @@ int get_next_token(Token *token)
 				}
 				else
 				{
-                    ungetc(c, source_file);
+					ungetc(c, source_file);
 					token->type = TOKEN_TYPE_DIV;
 					return free_resources(SCANNER_TOKEN_OK, str);
 				}
