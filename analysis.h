@@ -41,7 +41,6 @@ typedef struct
 	int label_index;			/// Index for generating unique labels.
 	int label_deep;				/// Deep of labes.
 
-	bool scope_processed;		/// Defines if the main scope has been processed
 	bool in_function;			/// Defines if the parser is in function
 	bool in_declaration;		/// Defines if param rule should add or check it's params
 	bool in_while_or_if;		/// Defines if the parser is in construction while, if or then

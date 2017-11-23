@@ -58,6 +58,8 @@
 
 
 // forward declarations
+static int scope(PData* data);
+static int end(PData* data);
 static int params(PData* data);
 static int param_n(PData* data);
 static int statement(PData* data);
@@ -77,40 +79,9 @@ static int print(PData* data);
 static int prog(PData* data)
 {
 	int result;
-
-	// <prog> -> SCOPE EOL <statement> END SCOPE <prog>
-	if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_SCOPE)
-	{
-		// we are in scope
-		data->in_function = false;
-		data->current_id = NULL;
-		data->label_index = 0;
-
-		// program may contain only 1 scope
-		if (data->scope_processed)
-			return SEM_ERR_OTHER;
-		else
-			data->scope_processed = true;
-
-		GENERATE_CODE(generate_main_scope);
-
-		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
-		GET_TOKEN_AND_CHECK_RULE(statement);
-		CHECK_KEYWORD(KEYWORD_END);
-		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_SCOPE);
-
-		GENERATE_CODE(generate_end_of_main_scope);
-
-		// clear local symbol table
-		sym_table_free(&data->local_table);
-
-		// get next token and execute <prog> rule
-		GET_TOKEN();
-		return prog(data);
-	}
-
+	
 	// <prog> -> DECLARE FUNCTION ID ( <params> ) AS TYPE <prog>
-	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_DECLARE)
+	if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_DECLARE)
 	{
 		data->in_declaration = true;
 		data->non_declared_function = true;
@@ -162,46 +133,27 @@ static int prog(PData* data)
 		return prog(data);
 	}
 
-	// <prog> -> EOF
-	else if (data->token.type == TOKEN_TYPE_EOF)
-	{
-		// check if all functions are defined
-		for (int i = 0; i < MAX_SYMTABLE_SIZE; i++)
-			for (Sym_table_item* it = data->global_table[i]; it != NULL; it = it->next)
-				if (!it->data.defined) return SEM_ERR_UNDEFINED_VAR;
-
-		if (!data->scope_processed) return SEM_ERR_OTHER;
-
-		return SYNTAX_OK;
-	}
-
-	// <prog> -> EOL <prog>
-	else if (data->token.type == TOKEN_TYPE_EOL)
-	{
-		GET_TOKEN();
-		return prog(data);
-	}
-
 	// <prog> -> FUNCTION ID ( <params> ) AS TYPE EOL <statement> END FUNCTION <prog>
-	else
+	else if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_FUNCTION)
 	{
 		data->in_function = true;
 		data->in_declaration = false;
 		data->label_index = 0;
 
-		CHECK_KEYWORD(KEYWORD_FUNCTION);
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_IDENTIFIER);
 
 		// if function wasn't declared add it to the global symbol table
 		bool internal_error;
 		data->current_id = sym_table_add_symbol(&data->global_table, data->token.attribute.string->str, &internal_error);
-		if (data->current_id) 
-			data->non_declared_function = true;
+		if (data->current_id)
+			data->non_declared_function = true;			
 		else
 		{
 			if (internal_error) return ERROR_INTERNAL;
 			data->non_declared_function = false;
 			data->current_id = sym_table_search(&data->global_table, data->token.attribute.string->str);
+			if (data->current_id->defined)
+				return SEM_ERR_UNDEFINED_VAR;
 		}
 
 		GENERATE_CODE(generate_function_head, data->current_id->identifier);
@@ -263,6 +215,86 @@ static int prog(PData* data)
 		// get next token and execute <prog> rule
 		GET_TOKEN();
 		return prog(data);
+	}
+
+	// <prog> -> EOL <prog>
+	else if (data->token.type == TOKEN_TYPE_EOL)
+	{
+		GET_TOKEN();
+		return prog(data);
+	}
+
+	// <prog> -> <scope>
+	else
+	{
+		return scope(data);
+	}
+
+	return SYNTAX_ERR;
+}
+
+/**
+ * Implementation of <scope> rule.
+ *
+ * @return Given exit code.
+ */
+static int scope(PData* data)
+{
+	int result;
+
+	// <prog> -> SCOPE EOL <statement> END SCOPE <end>
+	if (data->token.type == TOKEN_TYPE_KEYWORD && data->token.attribute.keyword == KEYWORD_SCOPE)
+	{
+		// check if all functions are defined
+		for (int i = 0; i < MAX_SYMTABLE_SIZE; i++)
+			for (Sym_table_item* it = data->global_table[i]; it != NULL; it = it->next)
+				if (!it->data.defined) return SEM_ERR_UNDEFINED_VAR;
+
+		// we are in scope
+		data->in_function = false;
+		data->current_id = NULL;
+		data->label_index = 0;
+
+		GENERATE_CODE(generate_main_scope);
+
+		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
+		GET_TOKEN_AND_CHECK_RULE(statement);
+		CHECK_KEYWORD(KEYWORD_END);
+		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_SCOPE);
+
+		GENERATE_CODE(generate_end_of_main_scope);
+
+		// clear local symbol table
+		sym_table_free(&data->local_table);
+
+		// get next token and execute <prog> rule
+		GET_TOKEN();
+		return end(data);
+	}
+
+	return SYNTAX_ERR;
+}
+
+/**
+ * Implementation of <end> rule.
+ *
+ * @return Given exit code.
+ */
+static int end(PData* data)
+{
+	int result;
+
+	// <prog> -> EOL <end>
+	if (data->token.type == TOKEN_TYPE_EOL)
+	{
+		GET_TOKEN();
+		return end(data);
+	}
+
+	// <end> -> EOF
+	if (data->token.type == TOKEN_TYPE_EOF)
+	{
+		return SYNTAX_OK;
 	}
 
 	return SYNTAX_ERR;
@@ -652,10 +684,10 @@ static int def_var(PData* data)
 {
 	int result;
 
-	// <def_var> -> = <def_val>
+	// <def_var> -> = <expression>
 	if (data->token.type == TOKEN_TYPE_ASSIGN)
 	{
-		GET_TOKEN_AND_CHECK_RULE(def_value);
+		GET_TOKEN_AND_CHECK_RULE(expression);
 	}
 
 	// <def_var> -> ε
@@ -883,7 +915,6 @@ static bool init_variables(PData* data)
 	data->label_index = 0;
 	data->label_deep = -1;
 
-	data->scope_processed = false;
 	data->in_function = false;
 	data->in_declaration = false;
 	data->in_while_or_if = false;
