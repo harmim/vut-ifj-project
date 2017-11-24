@@ -342,6 +342,21 @@ bool generate_function_before_pass_params()
 }
 
 
+bool generate_function_convert_passed_param(Data_type from, Data_type to, int index)
+{
+	if (from == TYPE_DOUBLE && to == TYPE_INT)
+	{
+		ADD_CODE("FLOAT2R2EINT TF@%"); ADD_CODE_INT(index); ADD_CODE(" TF@%"); ADD_CODE_INT(index); ADD_CODE("\n");
+	}
+	else if (from == TYPE_INT && to == TYPE_DOUBLE)
+	{
+		ADD_CODE("INT2FLOAT TF@%"); ADD_CODE_INT(index); ADD_CODE(" TF@%"); ADD_CODE_INT(index); ADD_CODE("\n");
+	}
+
+	return true;
+}
+
+
 /**
  * Generates term value.
  *

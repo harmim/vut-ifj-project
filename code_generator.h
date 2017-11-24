@@ -121,6 +121,16 @@ bool generate_function_before_pass_params();
 bool generate_function_pass_param(Token token, int index);
 
 /**
+ * Generates convert passed parameter data type.
+ *
+ * @param from Data type to convert from.
+ * @param to Data type to conver to.
+ * @param index Parameter index (position).
+ * @return True if it was successful, false otherwise.
+ */
+bool generate_function_convert_passed_param(Data_type from, Data_type to, int index);
+
+/**
  * Generates return statement in function.
  *
  * @param function_id Function identifier.

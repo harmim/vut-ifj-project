@@ -816,12 +816,16 @@ static int value(PData* data)
 	if (data->rhs_id->params->length == data->param_index)
 		return SEM_ERR_TYPE_COMPAT;
 
+	GENERATE_CODE(generate_function_pass_param, data->token, data->param_index);
+
 	switch (data->token.type)
 	{
 	// <value> -> DOUBLE_NUMBER
 	case TOKEN_TYPE_DOUBLE_NUMBER:
 		if (data->rhs_id->params->str[data->param_index] == 's')
 			return SEM_ERR_TYPE_COMPAT;
+		if (data->rhs_id->params->str[data->param_index] == 'i')
+			GENERATE_CODE(generate_function_convert_passed_param, TYPE_DOUBLE, TYPE_INT, data->param_index);
 
 		break;
 
@@ -829,6 +833,8 @@ static int value(PData* data)
 	case TOKEN_TYPE_INT_NUMBER:
 		if (data->rhs_id->params->str[data->param_index] == 's')
 			return SEM_ERR_TYPE_COMPAT;
+		if (data->rhs_id->params->str[data->param_index] == 'd')
+			GENERATE_CODE(generate_function_convert_passed_param, TYPE_INT, TYPE_DOUBLE, data->param_index);
 
 		break;
 
@@ -849,12 +855,16 @@ static int value(PData* data)
 		case TYPE_INT:
 			if (data->rhs_id->params->str[data->param_index] == 's')
 				return SEM_ERR_TYPE_COMPAT;
+			if (data->rhs_id->params->str[data->param_index] == 'd')
+				GENERATE_CODE(generate_function_convert_passed_param, TYPE_INT, TYPE_DOUBLE, data->param_index);
 
 			break;
 
 		case TYPE_DOUBLE:
 			if (data->rhs_id->params->str[data->param_index] == 's')
 				return SEM_ERR_TYPE_COMPAT;
+			if (data->rhs_id->params->str[data->param_index] == 'i')
+				GENERATE_CODE(generate_function_convert_passed_param, TYPE_DOUBLE, TYPE_INT, data->param_index);
 
 			break;
 
@@ -873,8 +883,6 @@ static int value(PData* data)
 	default:
 		return SYNTAX_ERR;
 	}
-
-	GENERATE_CODE(generate_function_pass_param, data->token, data->param_index);
 
 	// increment argument position
 	data->param_index++;
