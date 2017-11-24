@@ -103,9 +103,10 @@ static int prog(PData* data)
 		CHECK_TYPE(TOKEN_TYPE_RIGHT_BRACKET);
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_AS);
 
-		// get next token and check for TYPE token
+		// get next token 
 		GET_TOKEN();
 
+		// check for <type> rule
 		if (data->token.type == TOKEN_TYPE_KEYWORD)
 		{
 			switch (data->token.attribute.keyword)
@@ -126,7 +127,8 @@ static int prog(PData* data)
 				return SYNTAX_ERR;
 			}
 		}
-		else return SYNTAX_ERR;
+		else
+			return SYNTAX_ERR;
 		
 		// get next token and execute <prog> rule
 		GET_TOKEN();
@@ -163,8 +165,10 @@ static int prog(PData* data)
 		CHECK_TYPE(TOKEN_TYPE_RIGHT_BRACKET);
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_AS);
 
-		// get next token and check for TYPE token
+		// get next token
 		GET_TOKEN();
+
+		// check for <type> rule
 		if (data->token.type == TOKEN_TYPE_KEYWORD)
 		{
 			switch (data->token.attribute.keyword)
@@ -302,7 +306,7 @@ static int end(PData* data)
 
 
 /**
- * Implementation of <type> rule.
+ * Implementation of <type> rule. Only for variables.
  *
  * @return Given exit code.
  */
@@ -683,7 +687,9 @@ static int statement(PData* data)
 static int def_var(PData* data)
 {
 	int result;
-
+	
+	GENERATE_CODE(generate_var_default_value, data->lhs_id->identifier, data->lhs_id->type);
+	
 	// <def_var> -> = <expression>
 	if (data->token.type == TOKEN_TYPE_ASSIGN)
 	{
@@ -691,10 +697,6 @@ static int def_var(PData* data)
 	}
 
 	// <def_var> -> ε
-	else
-	{
-		GENERATE_CODE(generate_var_default_value, data->lhs_id->identifier, data->lhs_id->type);
-	}
 
 	return SYNTAX_OK;
 }
