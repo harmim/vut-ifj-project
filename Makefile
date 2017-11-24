@@ -60,7 +60,7 @@ clean_is_it_ok:
 
 .PHONY: clean
 clean: clean_pack clean_is_it_ok clean_depdir clean_doc
-	rm -rf $(EXECUTABLE) *.o *.out *.dSYM/
+	rm -rf $(EXECUTABLE) *.o *.out *.dSYM/ log/
 
 
 # #################### Auto-Dependency Generation #####################

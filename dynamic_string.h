@@ -15,9 +15,6 @@
 #include <stdbool.h>
 
 
-#define DYNAMIC_STRING_LEN_INC 8 /// Inicialization lenght of string.
-
-
 /**
  * @struct Representation of dynamic string.
  */

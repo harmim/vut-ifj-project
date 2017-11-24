@@ -11,9 +11,9 @@
 
 #include "dynamic_string.h"
 #include "error.h"
+#include "symtable.h"
 #include "analysis.h"
 #include "code_generator.h"
-#include "symtable.h"
 
 
 #define IS_VALUE(token)												\
@@ -33,10 +33,10 @@
 	if ((result = rule(data))) return result
 
 #define CHECK_KEYWORD(_keyword)										\
-		if (														\
-			data->token.type != TOKEN_TYPE_KEYWORD					\
-			|| data->token.attribute.keyword != (_keyword)			\
-		) return SYNTAX_ERR
+	if (															\
+		data->token.type != TOKEN_TYPE_KEYWORD						\
+		|| data->token.attribute.keyword != (_keyword)				\
+	) return SYNTAX_ERR
 
 #define GET_TOKEN_AND_CHECK_TYPE(_type)								\
 	do {															\
@@ -158,7 +158,7 @@ static int prog(PData* data)
 				return SEM_ERR_UNDEFINED_VAR;
 		}
 
-		GENERATE_CODE(generate_function_head, data->current_id->identifier);
+		GENERATE_CODE(generate_function_start, data->current_id->identifier);
 
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_LEFT_BRACKET);
 		GET_TOKEN_AND_CHECK_RULE(params);
@@ -208,7 +208,7 @@ static int prog(PData* data)
 		CHECK_KEYWORD(KEYWORD_END);
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_FUNCTION);
 
-		GENERATE_CODE(generate_end_of_function, data->current_id->identifier);
+		GENERATE_CODE(generate_function_end, data->current_id->identifier);
 
 		// Current function is defined
 		data->current_id->defined = true;
@@ -237,6 +237,7 @@ static int prog(PData* data)
 	return SYNTAX_ERR;
 }
 
+
 /**
  * Implementation of <scope> rule.
  *
@@ -259,14 +260,14 @@ static int scope(PData* data)
 		data->current_id = NULL;
 		data->label_index = 0;
 
-		GENERATE_CODE(generate_main_scope);
+		GENERATE_CODE(generate_main_scope_start);
 
 		GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_EOL);
 		GET_TOKEN_AND_CHECK_RULE(statement);
 		CHECK_KEYWORD(KEYWORD_END);
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_SCOPE);
 
-		GENERATE_CODE(generate_end_of_main_scope);
+		GENERATE_CODE(generate_main_scope_end);
 
 		// clear local symbol table
 		sym_table_free(&data->local_table);
@@ -278,6 +279,7 @@ static int scope(PData* data)
 
 	return SYNTAX_ERR;
 }
+
 
 /**
  * Implementation of <end> rule.
@@ -356,6 +358,7 @@ static int type(PData* data)
 	return SYNTAX_OK;
 }
 
+
 /**
  * Implementation of <params> rule.
  *
@@ -383,7 +386,7 @@ static int params(PData* data)
 				else return SEM_ERR_UNDEFINED_VAR;
 			}
 
-			GENERATE_CODE(generate_declare_function_param, data->rhs_id->identifier, data->param_index);
+			GENERATE_CODE(generate_function_param_declare, data->rhs_id->identifier, data->param_index);
 		}
 
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_AS);
@@ -400,6 +403,7 @@ static int params(PData* data)
 
 	return SYNTAX_OK;
 }
+
 
 /**
  * Implementation of <param_n> rule.
@@ -430,7 +434,7 @@ static int param_n(PData* data)
 				else return SEM_ERR_UNDEFINED_VAR;
 			}
 
-			GENERATE_CODE(generate_declare_function_param, data->rhs_id->identifier, data->param_index);
+			GENERATE_CODE(generate_function_param_declare, data->rhs_id->identifier, data->param_index);
 		}
 
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_AS);
@@ -445,6 +449,7 @@ static int param_n(PData* data)
 	
 	return SYNTAX_OK;
 }
+
 
 /**
  * Implementation of <statement> rule.
@@ -471,7 +476,7 @@ static int statement(PData* data)
 			else return SEM_ERR_UNDEFINED_VAR;
 		}
 
-		GENERATE_CODE(generate_declare_var, data->lhs_id->identifier);
+		GENERATE_CODE(generate_var_declare, data->lhs_id->identifier);
 
 		GET_TOKEN_AND_CHECK_KEYWORD(KEYWORD_AS);
 
@@ -679,6 +684,7 @@ static int statement(PData* data)
 	return SYNTAX_OK;
 }
 
+
 /**
  * Implementation of <def_var> rule.
  *
@@ -700,6 +706,7 @@ static int def_var(PData* data)
 
 	return SYNTAX_OK;
 }
+
 
 /**
  * Implementation of <def_value> rule.
@@ -723,7 +730,7 @@ static int def_value(PData* data)
 				if (data->lhs_id->type == TYPE_STRING || data->rhs_id->type == TYPE_STRING)
 					return SEM_ERR_TYPE_COMPAT;
 
-			GENERATE_CODE(generate_before_pass_params_to_function);
+			GENERATE_CODE(generate_function_before_pass_params);
 
 			GET_TOKEN_AND_CHECK_TYPE(TOKEN_TYPE_LEFT_BRACKET);
 			GET_TOKEN_AND_CHECK_RULE(arg);
@@ -732,7 +739,7 @@ static int def_value(PData* data)
 
 			if (data->rhs_id->params->length != data->param_index) return SEM_ERR_TYPE_COMPAT;
 
-			GENERATE_CODE(generate_call_function, data->rhs_id->identifier);
+			GENERATE_CODE(generate_function_call, data->rhs_id->identifier);
 			GENERATE_CODE(generate_function_retval_assign, data->lhs_id->identifier, data->lhs_id->type, data->rhs_id->type);
 
 			return SYNTAX_OK;
@@ -748,6 +755,7 @@ static int def_value(PData* data)
 
 	return SYNTAX_OK;
 }
+
 
 /**
  * Implementation of <arg> rule.
@@ -774,6 +782,7 @@ static int arg(PData* data)
 	return SYNTAX_OK;
 }
 
+
 /**
  * Implementation of <arg_n> rule.
  *
@@ -794,6 +803,7 @@ static int arg_n(PData* data)
 
 	return SYNTAX_OK;
 }
+
 
 /**
  * Implementation of <value> rule.
@@ -864,13 +874,14 @@ static int value(PData* data)
 		return SYNTAX_ERR;
 	}
 
-	GENERATE_CODE(generate_pass_param_to_function, data->token, data->param_index);
+	GENERATE_CODE(generate_function_pass_param, data->token, data->param_index);
 
 	// increment argument position
 	data->param_index++;
 
 	return SYNTAX_OK;
 }
+
 
 /**
  * Implementation of <print> rule.

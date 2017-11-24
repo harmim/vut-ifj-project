@@ -18,6 +18,32 @@
 #include "scanner.h"
 
 
+// Scanner states.
+#define SCANNER_STATE_START 200 /// Starting state every new token processing starts here and initializes other states
+#define SCANNER_STATE_COMMENTARY 201 /// Line commentary, ignores every symbol, ends with EOL
+#define SCANNER_STATE_BACKSLASH 202 /// Operator / OR start of block comment - next symbol must be '
+#define SCANNER_STATE_BLOCK_COMMENTARY 203 /// Starts with /' and ignores every symbol except ' - this might be the end of block comment
+#define SCANNER_STATE_BLOCK_COMMENTARY_LEAVE 204 /// Ends with '/ the ' is read, if the next symbol is /, leave, else if ', stay, else go back to state before
+#define SCANNER_STATE_IDENTIFIER_OR_KEYWORD 205 /// Starts with letter or _, if next symbols are alphanumeric or _, add them to string, which is later compared with reserved words | Returns either keyword or string as ID
+#define SCANNER_STATE_NUMBER 206 /// Start of number processing, accepts numbers, e/E and . | Can return integer number
+#define SCANNER_STATE_NUMBER_POINT 207 /// If symbol was ., the number has type double
+#define SCANNER_STATE_NUMBER_DOUBLE 208 /// The last symbol was number | Can return double number
+#define SCANNER_STATE_NUMBER_EXPONENT 209 /// The last symbol was e or E, the number has type double, continues with optional symbols +/- or number
+#define SCANNER_STATE_NUMBER_EXPONENT_SIGN 210 /// Optional symbol was read, continue with numbers only
+#define SCANNER_STATE_NUMBER_EXPONENT_FINAL 211 /// Returns double number with exponent
+#define SCANNER_STATE_STRING_START 212 /// String starts with !" else returns error
+#define SCANNER_STATE_STRING 213 /// Sequence !" was read, ends with ", if ASCII value is lower than 32, returns error, these symbols can be written using escape sequence | Returns string
+#define SCANNER_STATE_STRING_ESCAPE 214 /// If symbol \ was loaded, can replace char with escape sequence symbols
+#define SCANNER_STATE_STRING_ESCAPE_ZEROONE 215 /// 0 or 1 was loaded, accepts only digits
+#define SCANNER_STATE_STRING_ESCAPE_ZEROONE_ZERONINE 216 /// first 0 or 1 then 0 to 9 was loaded, accepts only digits, returns symbol with ASCII value
+#define SCANNER_STATE_STRING_ESCAPE_TWO 217 /// 2 was loaded, accepts only 0 to 5 digits
+#define SCANNER_STATE_STRING_ESCAPE_TWO_ZEROFOUR 218 /// first 2 then 0 to 9 was loaded, accepts only digits, returns symbol with ASCII value
+#define SCANNER_STATE_STRING_ESCAPE_TWO_FIVE 219 /// first 2 then 5 was loaded, accepts only 0 to 5 digits, returns symbol with ASCII value
+#define SCANNER_STATE_LESS_THAN 220 /// Starts with < | Returns <>, <= or <
+#define SCANNER_STATE_MORE_THAN 221 /// Starts with > | Returns > or >=
+#define SCANNER_STATE_EOL 222 /// End of line
+
+
 FILE *source_file; /// Source file that will be scanned
 Dynamic_string *dynamic_string; /// Dynamic string that will be written into
 

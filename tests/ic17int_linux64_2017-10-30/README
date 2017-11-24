@@ -1,9 +1,11 @@
 ic17int - referencni interpret ciloveho jazyka IFJcode17
-verze 2017-10-30
+verze 2017-11-21
 
 Prubezne doplnovane informace najdete na Wiki predmetu IFJ na strance ic17int.
 
 CHANGES:
+  * 2017-11-21:
+    * opravena chyba pri nacitani desetinnych cisel, upraven --verbose vypis desetinnych cisel (misto %g je pouzit format s presnejsim vypisem)
   * 2017-10-30:
     * opravena chyba pri znovupouziti promenne (napr. pomoci GETCHAR)  
   * 2017-10-27:

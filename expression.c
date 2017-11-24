@@ -2,20 +2,17 @@
 * Project: Implementace překladače imperativního jazyka IFJ17.
 *
 * @brief Implementation of parsing of expressions.
- *
+*
 * @author Timotej Halás <xhalas10@stud.fit.vutbr.cz>
- *@author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
+* @author Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
 */
 
 
 #include "scanner.h"
-#include "symtable.h"
 #include "expression.h"
 #include "symstack.h"
 #include "error.h"
 #include "code_generator.h"
-#include "analysis.h"
-#include "dynamic_string.h"
 
 
 #define TABLE_SIZE 8

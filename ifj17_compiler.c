@@ -16,8 +16,7 @@
 #include "code_generator.h"
 
 
-// TODO: potom odstranit
-#define DEBUG 1
+//#define DEBUG 1
 
 
 /**

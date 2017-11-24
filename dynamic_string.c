@@ -14,6 +14,9 @@
 #include "dynamic_string.h"
 
 
+#define DYNAMIC_STRING_LEN_INC 8 /// Inicialization lenght of string.
+
+
 void dynamic_string_clear(Dynamic_string *s)
 {
 	s->length = 0;

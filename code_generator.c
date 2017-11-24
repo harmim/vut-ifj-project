@@ -14,15 +14,24 @@
 #include "code_generator.h"
 
 
-// macros
+/// macros
 #define ADD_INST(_inst)														\
 	if (!dynamic_string_add_const_str(&code, (_inst "\n"))) return false
 
 #define ADD_CODE(_code)														\
 	if (!dynamic_string_add_const_str(&code, (_code))) return false
 
+#define ADD_CODE_INT(_code)													\
+	do {																	\
+		char str[MAX_DIGITS];												\
+		sprintf(str, "%d", _code);											\
+		ADD_CODE(str);														\
+	} while (0)
 
-// built-in functions
+
+#define MAX_DIGITS 40 /// Maximum digits for converting number to string.
+
+/// built-in functions
 // Length(s As String) As Integer
 #define FUNCTION_LENGTH														\
 	"\n # Built-in function Length"											\
@@ -133,7 +142,12 @@
 Dynamic_string code; /// String for generating code.
 
 
-static bool define_build_in_functions()
+/**
+ * Defines built-in functions.
+ *
+ * @return True if it was successful, false otherwise.
+ */
+static bool define_built_in_functions()
 {
 	ADD_INST(FUNCTION_LENGTH);
 	ADD_INST(FUNCTION_SUBSTR);
@@ -144,6 +158,11 @@ static bool define_build_in_functions()
 }
 
 
+/**
+ * Generates file header, defines global variables and jump to main function.
+ *
+ * @return True if it was successful, false otherwise.
+ */
 static bool generate_file_header()
 {
 	ADD_INST("# Start of program");
@@ -171,7 +190,7 @@ bool code_generator_start()
 
 	if (!generate_file_header()) return false;
 
-	if (!define_build_in_functions()) return false;
+	if (!define_built_in_functions()) return false;
 
 	return true;
 }
@@ -190,7 +209,7 @@ void code_generator_flush(FILE *destination_file)
 }
 
 
-bool generate_main_scope()
+bool generate_main_scope_start()
 {
 	ADD_INST("\n# Main scope");
 
@@ -202,9 +221,9 @@ bool generate_main_scope()
 }
 
 
-bool generate_end_of_main_scope()
+bool generate_main_scope_end()
 {
-	ADD_INST("\n# End of main scope");
+	ADD_INST("# End of main scope");
 
 	ADD_INST("POPFRAME");
 	ADD_INST("CLEARS");
@@ -213,7 +232,7 @@ bool generate_end_of_main_scope()
 }
 
 
-bool generate_function_head(char *function_id)
+bool generate_function_start(char *function_id)
 {
 	ADD_CODE("\n# Start of function "); ADD_CODE(function_id); ADD_CODE("\n");
 
@@ -224,7 +243,7 @@ bool generate_function_head(char *function_id)
 }
 
 
-bool generate_end_of_function(char *function_id)
+bool generate_function_end(char *function_id)
 {
 	ADD_CODE("# End of function "); ADD_CODE(function_id); ADD_CODE("\n");
 
@@ -236,6 +255,12 @@ bool generate_end_of_function(char *function_id)
 }
 
 
+/**
+ * Generates default value of variable.
+ *
+ * @param type Data type of variable.
+ * @return True if it was successful, false otherwise.
+ */
 static bool generate_default_var_value(Data_type type)
 {
 	switch (type)
@@ -252,8 +277,11 @@ static bool generate_default_var_value(Data_type type)
 			ADD_CODE("string@");
 			break;
 
+		case TYPE_BOOL:
+			ADD_CODE("bool@false");
+
 		default:
-			break;
+			return false;
 	}
 
 	return true;
@@ -272,25 +300,7 @@ bool generate_function_retval(Data_type type)
 }
 
 
-bool generate_declare_var(char *var_id)
-{
-	ADD_CODE("DEFVAR LF@"); ADD_CODE(var_id); ADD_CODE("\n");
-
-	return true;
-}
-
-
-bool generate_var_default_value(char *var_id, Data_type type)
-{
-	ADD_CODE("MOVE LF@"); ADD_CODE(var_id); ADD_CODE(" ");
-	if (!generate_default_var_value(type)) return false;
-	ADD_CODE("\n");
-
-	return true;
-}
-
-
-bool generate_call_function(char *function_id)
+bool generate_function_call(char *function_id)
 {
 	ADD_CODE("CALL $"); ADD_CODE(function_id); ADD_CODE("\n");
 
@@ -315,19 +325,16 @@ bool generate_function_retval_assign(char *l_val_id, Data_type l_type, Data_type
 }
 
 
-bool generate_declare_function_param(char *var_id, int index)
+bool generate_function_param_declare(char *param_id, int index)
 {
-	ADD_CODE("DEFVAR LF@"); ADD_CODE(var_id); ADD_CODE("\n");
-
-	char index_str[MAX_TERM_DIGITS];
-	sprintf(index_str, "%d", index);
-	ADD_CODE("MOVE LF@"); ADD_CODE(var_id); ADD_CODE(" LF@%"); ADD_CODE(index_str); ADD_CODE("\n");
+	ADD_CODE("DEFVAR LF@"); ADD_CODE(param_id); ADD_CODE("\n");
+	ADD_CODE("MOVE LF@"); ADD_CODE(param_id); ADD_CODE(" LF@%"); ADD_CODE_INT(index); ADD_CODE("\n");
 
 	return true;
 }
 
 
-bool generate_before_pass_params_to_function()
+bool generate_function_before_pass_params()
 {
 	ADD_INST("CREATEFRAME");
 
@@ -335,12 +342,19 @@ bool generate_before_pass_params_to_function()
 }
 
 
-static bool generate_literal(Token token)
+/**
+ * Generates term value.
+ *
+ * @param token Token with term value.
+ * @return True if it was successful, false otherwise.
+ */
+static bool generate_term_value(Token token)
 {
-	char term_str[MAX_TERM_DIGITS];
+	char term_str[MAX_DIGITS];
 	unsigned char c;
+
 	Dynamic_string tmp_string;
-	dynamic_string_init(&tmp_string);
+	if (!dynamic_string_init(&tmp_string)) return false;
 
 	switch (token.type)
 	{
@@ -376,6 +390,7 @@ static bool generate_literal(Token token)
 			break;
 
 		default:
+			dynamic_string_free(&tmp_string);
 			return false;
 	}
 
@@ -385,14 +400,39 @@ static bool generate_literal(Token token)
 }
 
 
-bool generate_pass_param_to_function(Token token, int index)
+bool generate_function_pass_param(Token token, int index)
 {
-	char index_str[MAX_TERM_DIGITS];
-	sprintf(index_str, "%d", index);
-	ADD_CODE("DEFVAR TF@%"); ADD_CODE(index_str); ADD_CODE("\n");
+	ADD_CODE("DEFVAR TF@%"); ADD_CODE_INT(index); ADD_CODE("\n");
 
-	ADD_CODE("MOVE TF@%"); ADD_CODE(index_str); ADD_CODE(" ");
-	if (!generate_literal(token)) return false;
+	ADD_CODE("MOVE TF@%"); ADD_CODE_INT(index); ADD_CODE(" ");
+	if (!generate_term_value(token)) return false;
+	ADD_CODE("\n");
+
+	return true;
+}
+
+
+bool generate_function_return(char *function_id)
+{
+	ADD_INST("MOVE LF@%retval GF@%exp_result");
+	ADD_CODE("JUMP $"); ADD_CODE(function_id); ADD_CODE("%return\n");
+
+	return true;
+}
+
+
+bool generate_var_declare(char *var_id)
+{
+	ADD_CODE("DEFVAR LF@"); ADD_CODE(var_id); ADD_CODE("\n");
+
+	return true;
+}
+
+
+bool generate_var_default_value(char *var_id, Data_type type)
+{
+	ADD_CODE("MOVE LF@"); ADD_CODE(var_id); ADD_CODE(" ");
+	if (!generate_default_var_value(type)) return false;
 	ADD_CODE("\n");
 
 	return true;
@@ -427,10 +467,18 @@ bool generate_input(char *var_id, Data_type type)
 }
 
 
+bool generate_print()
+{
+	ADD_INST("WRITE GF@%exp_result");
+
+	return true;
+}
+
+
 bool generate_push(Token token)
 {
 	ADD_CODE("PUSHS ");
-	if (!generate_literal(token)) return false;
+	if (!generate_term_value(token)) return false;
 	ADD_CODE("\n");
 
 	return true;
@@ -561,32 +609,18 @@ bool generate_stack_op2_to_double()
 }
 
 
-bool generate_print()
-{
-	ADD_INST("WRITE GF@%exp_result");
-
-	return true;
-}
-
-
-bool generate_function_return(char *function_id)
-{
-	ADD_INST("MOVE LF@%retval GF@%exp_result");
-	ADD_CODE("JUMP $"); ADD_CODE(function_id); ADD_CODE("%return\n");
-
-	return true;
-}
-
-
+/**
+ * Generates label.
+ *
+ * @param function_id Identifier of function in which is this label.
+ * @param label_index Index of label.
+ * @param label_deep Deep of label.
+ * @return True if it was successful, false otherwise.
+ */
 static bool generate_label(char *function_id, int label_index, int label_deep)
 {
-	char label_index_str[MAX_TERM_DIGITS];
-	sprintf(label_index_str, "%d", label_index);
-	char label_deep_str[MAX_TERM_DIGITS];
-	sprintf(label_deep_str, "%d", label_deep);
-
-	ADD_CODE("LABEL $"); ADD_CODE(function_id); ADD_CODE("%"); ADD_CODE(label_index_str);
-	ADD_CODE("%"); ADD_CODE(label_deep_str); ADD_CODE("\n");
+	ADD_CODE("LABEL $"); ADD_CODE(function_id); ADD_CODE("%"); ADD_CODE_INT(label_deep);
+	ADD_CODE("%"); ADD_CODE_INT(label_index); ADD_CODE("\n");
 
 	return true;
 }
@@ -600,15 +634,10 @@ bool generate_if_head()
 }
 
 
-bool generate_if_start(char *function_id, int next_label_index, int label_deep)
+bool generate_if_start(char *function_id, int label_index, int label_deep)
 {
-	char next_label_index_str[MAX_TERM_DIGITS];
-	sprintf(next_label_index_str, "%d", next_label_index);
-	char label_deep_str[MAX_TERM_DIGITS];
-	sprintf(label_deep_str, "%d", label_deep);
-
-	ADD_CODE("JUMPIFEQ $"); ADD_CODE(function_id); ADD_CODE("%"); ADD_CODE(next_label_index_str);
-	ADD_CODE("%"); ADD_CODE(label_deep_str); ADD_CODE(" GF@%exp_result bool@false"); ADD_CODE("\n");
+	ADD_CODE("JUMPIFEQ $"); ADD_CODE(function_id); ADD_CODE("%"); ADD_CODE_INT(label_deep);
+	ADD_CODE("%"); ADD_CODE_INT(label_index); ADD_CODE(" GF@%exp_result bool@false\n");
 
 	return true;
 }
@@ -616,13 +645,8 @@ bool generate_if_start(char *function_id, int next_label_index, int label_deep)
 
 bool generate_if_else_part(char *function_id, int label_index, int label_deep)
 {
-	char next_label_index_str[MAX_TERM_DIGITS];
-	sprintf(next_label_index_str, "%d", label_index + 1);
-	char label_deep_str[MAX_TERM_DIGITS];
-	sprintf(label_deep_str, "%d", label_deep);
-
-	ADD_CODE("JUMP $"); ADD_CODE(function_id); ADD_CODE("%"); ADD_CODE(next_label_index_str);
-	ADD_CODE("%"); ADD_CODE(label_deep_str); ADD_CODE("\n");
+	ADD_CODE("JUMP $"); ADD_CODE(function_id); ADD_CODE("%"); ADD_CODE_INT(label_deep);
+	ADD_CODE("%"); ADD_CODE_INT(label_index + 1); ADD_CODE("\n");
 
 	ADD_INST("# Else");
 
@@ -652,15 +676,10 @@ bool generate_while_head(char *function_id, int label_index, int label_deep)
 }
 
 
-bool generate_while_start(char *function_id, int prev_label_index, int label_deep)
+bool generate_while_start(char *function_id, int label_index, int label_deep)
 {
-	char prev_label_index_str[MAX_TERM_DIGITS];
-	sprintf(prev_label_index_str, "%d", prev_label_index);
-	char label_deep_str[MAX_TERM_DIGITS];
-	sprintf(label_deep_str, "%d", label_deep);
-
-	ADD_CODE("JUMPIFEQ $"); ADD_CODE(function_id); ADD_CODE("%"); ADD_CODE(prev_label_index_str);
-	ADD_CODE("%"); ADD_CODE(label_deep_str); ADD_CODE(" GF@%exp_result bool@false"); ADD_CODE("\n");
+	ADD_CODE("JUMPIFEQ $"); ADD_CODE(function_id); ADD_CODE("%"); ADD_CODE_INT(label_deep);
+	ADD_CODE("%"); ADD_CODE_INT(label_index); ADD_CODE(" GF@%exp_result bool@false"); ADD_CODE("\n");
 
 	return true;
 }
@@ -668,13 +687,8 @@ bool generate_while_start(char *function_id, int prev_label_index, int label_dee
 
 bool generate_while_end(char *function_id, int label_index, int label_deep)
 {
-	char prev_label_index_str[MAX_TERM_DIGITS];
-	sprintf(prev_label_index_str, "%d", label_index - 1);
-	char label_deep_str[MAX_TERM_DIGITS];
-	sprintf(label_deep_str, "%d", label_deep);
-
-	ADD_CODE("JUMP $"); ADD_CODE(function_id); ADD_CODE("%"); ADD_CODE(prev_label_index_str);
-	ADD_CODE("%"); ADD_CODE(label_deep_str); ADD_CODE("\n");
+	ADD_CODE("JUMP $"); ADD_CODE(function_id); ADD_CODE("%"); ADD_CODE_INT(label_deep);
+	ADD_CODE("%"); ADD_CODE_INT(label_index - 1); ADD_CODE("\n");
 
 	ADD_INST("# Loop");
 
