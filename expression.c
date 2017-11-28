@@ -324,8 +324,10 @@ static Prec_rules_enum test_rule(int num, Symbol_stack_item* op1, Symbol_stack_i
  */
 static int check_semantics(Prec_rules_enum rule, Symbol_stack_item* op1, Symbol_stack_item* op2, Symbol_stack_item* op3, Data_type* final_type)
 {
-	bool retype_op1 = false;
-	bool retype_op3 = false;
+	bool retype_op1_to_double = false;
+	bool retype_op3_to_double = false;
+	bool retype_op1_to_integer = false;
+	bool retype_op3_to_integer = false;
 
 	if (rule == OPERAND)
 	{
@@ -382,10 +384,10 @@ static int check_semantics(Prec_rules_enum rule, Symbol_stack_item* op1, Symbol_
 		*final_type = TYPE_DOUBLE;
 
 		if (op1->data_type == TYPE_INT)
-			retype_op1 = true;
+			retype_op1_to_double = true;
 
 		if (op3->data_type == TYPE_INT)
-			retype_op3 = true;
+			retype_op3_to_double = true;
 
 		break;
 
@@ -396,18 +398,24 @@ static int check_semantics(Prec_rules_enum rule, Symbol_stack_item* op1, Symbol_
 			return SEM_ERR_TYPE_COMPAT;
 
 		if (op1->data_type == TYPE_INT)
-			retype_op1 = true;
+			retype_op1_to_double = true;
 
 		if (op3->data_type == TYPE_INT)
-			retype_op3 = true;
+			retype_op3_to_double = true;
 
 		break;
 
 	case NT_IDIV_NT:
 		*final_type = TYPE_INT;
 
-		if (op1->data_type != TYPE_INT || op3->data_type != TYPE_INT)
+		if (op1->data_type == TYPE_STRING || op3->data_type == TYPE_STRING)
 			return SEM_ERR_TYPE_COMPAT;
+
+		if (op1->data_type == TYPE_DOUBLE)
+			retype_op1_to_integer = true;
+
+		if (op3->data_type == TYPE_DOUBLE)
+			retype_op3_to_integer = true;
 
 		break;
 
@@ -420,10 +428,10 @@ static int check_semantics(Prec_rules_enum rule, Symbol_stack_item* op1, Symbol_
 		*final_type = TYPE_BOOL;
 
 		if (op1->data_type == TYPE_INT && op3->data_type == TYPE_DOUBLE)
-			retype_op1 = true;
+			retype_op1_to_double = true;
 
 		else if (op1->data_type == TYPE_DOUBLE && op3->data_type == TYPE_INT)
-			retype_op3 = true;
+			retype_op3_to_double = true;
 
 		else if (op1->data_type != op3->data_type)
 			return SEM_ERR_TYPE_COMPAT;
@@ -434,14 +442,24 @@ static int check_semantics(Prec_rules_enum rule, Symbol_stack_item* op1, Symbol_
 		break;
 	}
 
-	if (retype_op1)
+	if (retype_op1_to_double)
 	{
 		GENERATE_CODE(generate_stack_op2_to_double);
 	}
 
-	if (retype_op3)
+	if (retype_op3_to_double)
 	{
 		GENERATE_CODE(generate_stack_op1_to_double);
+	}
+
+	if (retype_op1_to_integer)
+	{
+		// gen code - retype op1 to integer
+	}
+
+	if (retype_op3_to_integer)
+	{
+		// gen code - retype op3 to integer
 	}
 
 	return SYNTAX_OK;
