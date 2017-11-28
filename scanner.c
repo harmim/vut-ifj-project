@@ -74,6 +74,7 @@ static int process_identifier(Dynamic_string *str, Token *token)
 {
 	if (!dynamic_string_cmp_const_str(str, "and")) token->attribute.keyword = KEYWORD_AND;
 	else if (!dynamic_string_cmp_const_str(str, "as")) token->attribute.keyword = KEYWORD_AS;
+	else if (!dynamic_string_cmp_const_str(str, "asc")) token->attribute.keyword = KEYWORD_ASC;
 	else if (!dynamic_string_cmp_const_str(str, "boolean")) token->attribute.keyword = KEYWORD_BOOLEAN;
 	else if (!dynamic_string_cmp_const_str(str, "continue")) token->attribute.keyword = KEYWORD_CONTINUE;
 	else if (!dynamic_string_cmp_const_str(str, "declare")) token->attribute.keyword = KEYWORD_DECLARE;
@@ -86,10 +87,12 @@ static int process_identifier(Dynamic_string *str, Token *token)
 	else if (!dynamic_string_cmp_const_str(str, "exit")) token->attribute.keyword = KEYWORD_EXIT;
 	else if (!dynamic_string_cmp_const_str(str, "false")) token->attribute.keyword = KEYWORD_FALSE;
 	else if (!dynamic_string_cmp_const_str(str, "for")) token->attribute.keyword = KEYWORD_FOR;
+	else if (!dynamic_string_cmp_const_str(str, "chr")) token->attribute.keyword = KEYWORD_CHR;
 	else if (!dynamic_string_cmp_const_str(str, "function")) token->attribute.keyword = KEYWORD_FUNCTION;
 	else if (!dynamic_string_cmp_const_str(str, "if")) token->attribute.keyword = KEYWORD_IF;
 	else if (!dynamic_string_cmp_const_str(str, "input")) token->attribute.keyword = KEYWORD_INPUT;
 	else if (!dynamic_string_cmp_const_str(str, "integer")) token->attribute.keyword = KEYWORD_INTEGER;
+	else if (!dynamic_string_cmp_const_str(str, "length")) token->attribute.keyword = KEYWORD_LENGTH;
 	else if (!dynamic_string_cmp_const_str(str, "loop")) token->attribute.keyword = KEYWORD_LOOP;
 	else if (!dynamic_string_cmp_const_str(str, "next")) token->attribute.keyword = KEYWORD_NEXT;
 	else if (!dynamic_string_cmp_const_str(str, "not")) token->attribute.keyword = KEYWORD_NOT;
@@ -100,6 +103,7 @@ static int process_identifier(Dynamic_string *str, Token *token)
 	else if (!dynamic_string_cmp_const_str(str, "shared")) token->attribute.keyword = KEYWORD_SHARED;
 	else if (!dynamic_string_cmp_const_str(str, "string")) token->attribute.keyword = KEYWORD_STRING;
 	else if (!dynamic_string_cmp_const_str(str, "static")) token->attribute.keyword = KEYWORD_STATIC;
+	else if (!dynamic_string_cmp_const_str(str, "substr")) token->attribute.keyword = KEYWORD_SUBSTR;
 	else if (!dynamic_string_cmp_const_str(str, "then")) token->attribute.keyword = KEYWORD_THEN;
 	else if (!dynamic_string_cmp_const_str(str, "true")) token->attribute.keyword = KEYWORD_TRUE;
 	else if (!dynamic_string_cmp_const_str(str, "while")) token->attribute.keyword = KEYWORD_WHILE;
