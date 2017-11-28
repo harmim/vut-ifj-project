@@ -34,14 +34,15 @@
 #define SCANNER_STATE_STRING_START 212 /// String starts with !" else returns error
 #define SCANNER_STATE_STRING 213 /// Sequence !" was read, ends with ", if ASCII value is lower than 32, returns error, these symbols can be written using escape sequence | Returns string
 #define SCANNER_STATE_STRING_ESCAPE 214 /// If symbol \ was loaded, can replace char with escape sequence symbols
-#define SCANNER_STATE_STRING_ESCAPE_ZEROONE 215 /// 0 or 1 was loaded, accepts only digits
-#define SCANNER_STATE_STRING_ESCAPE_ZEROONE_ZERONINE 216 /// first 0 or 1 then 0 to 9 was loaded, accepts only digits, returns symbol with ASCII value
-#define SCANNER_STATE_STRING_ESCAPE_TWO 217 /// 2 was loaded, accepts only 0 to 5 digits
-#define SCANNER_STATE_STRING_ESCAPE_TWO_ZEROFOUR 218 /// first 2 then 0 to 9 was loaded, accepts only digits, returns symbol with ASCII value
+#define SCANNER_STATE_STRING_ESCAPE_ZERO 215 /// 0 loaded, accepts only digits
+#define SCANNER_STATE_STRING_ESCAPE_ZERO_ZERO 216 /// first 0 then 0 was loaded, accepts only 1 to 9, because 000 is not allowed, returns symbol with ASCII value
+#define SCANNER_STATE_STRING_ESCAPE_ONE 217 /// 1 was loaded, accepts only digits
+#define SCANNER_STATE_STRING_ESCAPE_TWO 218 /// 2 was loaded, accepts onlz digits from 0 to 5, because 255 is the max number allowed
 #define SCANNER_STATE_STRING_ESCAPE_TWO_FIVE 219 /// first 2 then 5 was loaded, accepts only 0 to 5 digits, returns symbol with ASCII value
-#define SCANNER_STATE_LESS_THAN 220 /// Starts with < | Returns <>, <= or <
-#define SCANNER_STATE_MORE_THAN 221 /// Starts with > | Returns > or >=
-#define SCANNER_STATE_EOL 222 /// End of line
+#define SCANNER_STATE_STRING_ESCAPE_REST 220 /// the rest cases, when the third number can be only digit, from 001 to 249
+#define SCANNER_STATE_LESS_THAN 221 /// Starts with < | Returns <>, <= or <
+#define SCANNER_STATE_MORE_THAN 222 /// Starts with > | Returns > or >=
+#define SCANNER_STATE_EOL 223 /// End of line
 
 
 FILE *source_file; /// Source file that will be scanned
@@ -601,10 +602,15 @@ int get_next_token(Token *token)
 					}
 					state = SCANNER_STATE_STRING;
 				}
-				else if (c == '0' || c == '1')
+				else if (c == '0')
 				{
 					strnum[0] = c;
-					state = SCANNER_STATE_STRING_ESCAPE_ZEROONE;
+					state = SCANNER_STATE_STRING_ESCAPE_ZERO;
+				}
+				else if (c == '1')
+				{
+					strnum[0] = c;
+					state = SCANNER_STATE_STRING_ESCAPE_ONE;
 				}
 				else if (c == '2')
 				{
@@ -618,11 +624,16 @@ int get_next_token(Token *token)
 
 				break;
 
-			case (SCANNER_STATE_STRING_ESCAPE_ZEROONE):
-				if (isdigit(c))
+			case (SCANNER_STATE_STRING_ESCAPE_ZERO):
+				if (c == '0')
 				{
 					strnum[1] = c;
-					state = SCANNER_STATE_STRING_ESCAPE_ZEROONE_ZERONINE;
+					state = SCANNER_STATE_STRING_ESCAPE_ZERO_ZERO;
+				}
+				else if (isdigit(c))
+				{
+					strnum[1] = c;
+					state = SCANNER_STATE_STRING_ESCAPE_REST;
 				}
 				else
 				{
@@ -631,8 +642,8 @@ int get_next_token(Token *token)
 
 				break;
 
-			case (SCANNER_STATE_STRING_ESCAPE_ZEROONE_ZERONINE):
-				if (isdigit(c))
+			case (SCANNER_STATE_STRING_ESCAPE_ZERO_ZERO):
+				if (isdigit(c) && c != '0')
 				{
 					strnum[2] = c;
 					state = SCANNER_STATE_STRING;
@@ -656,13 +667,26 @@ int get_next_token(Token *token)
 
 				break;
 
+			case (SCANNER_STATE_STRING_ESCAPE_ONE):
+				if (isdigit(c))
+				{
+					strnum[1] = c;
+					state = SCANNER_STATE_STRING_ESCAPE_REST;
+				}
+				else
+				{
+					return free_resources(SCANNER_ERROR_LEX, str);
+				}
+
+				break;
+
 			case (SCANNER_STATE_STRING_ESCAPE_TWO):
 				if (isdigit(c))
 				{
 					if (c == '0' || c == '1' || c == '2' || c == '3' || c == '4')
 					{
 						strnum[1] = c;
-						state = SCANNER_STATE_STRING_ESCAPE_TWO_ZEROFOUR;
+						state = SCANNER_STATE_STRING_ESCAPE_REST;
 					}
 					else if (c == '5')
 					{
@@ -681,8 +705,8 @@ int get_next_token(Token *token)
 
 				break;
 
-			case (SCANNER_STATE_STRING_ESCAPE_TWO_ZEROFOUR):
-				if (isdigit(c))
+			case (SCANNER_STATE_STRING_ESCAPE_TWO_FIVE):
+				if (c == '0' || c == '1' || c == '2' || c == '3' || c == '4' || c == '5')
 				{
 					strnum[2] = c;
 					state = SCANNER_STATE_STRING;
@@ -706,8 +730,8 @@ int get_next_token(Token *token)
 
 				break;
 
-			case (SCANNER_STATE_STRING_ESCAPE_TWO_FIVE):
-				if (c == '0' || c == '1' || c == '2' || c == '3' || c == '4' || c == '5')
+			case (SCANNER_STATE_STRING_ESCAPE_REST):
+				if (isdigit(c))
 				{
 					strnum[2] = c;
 					state = SCANNER_STATE_STRING;
