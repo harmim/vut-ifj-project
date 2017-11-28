@@ -716,11 +716,41 @@ static int def_var(PData* data)
 static int def_value(PData* data)
 {
 	int result;
-
-	// <def_value> -> ID ( <arg> )
-	if (data->token.type == TOKEN_TYPE_IDENTIFIER)
+	if (data->token.type == TOKEN_TYPE_IDENTIFIER || data->token.type == TOKEN_TYPE_KEYWORD)
 	{
-		data->rhs_id = sym_table_search(&data->global_table, data->token.attribute.string->str);
+		// <def_value> -> ID ( <arg> )
+		if (data->token.type == TOKEN_TYPE_IDENTIFIER)
+		{
+			data->rhs_id = sym_table_search(&data->global_table, data->token.attribute.string->str);
+		}
+
+		if (data->token.type == TOKEN_TYPE_KEYWORD)
+		{
+			switch (data->token.attribute.keyword)
+			{
+				// <def_value> -> ASC ( <arg> )
+			case KEYWORD_ASC:
+				data->rhs_id = sym_table_search(&data->global_table, "asc");
+				break;
+
+				// <def_value> -> CHR ( <arg> )
+			case KEYWORD_CHR:
+				data->rhs_id = sym_table_search(&data->global_table, "chr");
+				break;
+
+				// <def_value> -> LENGTH ( <arg> )
+			case KEYWORD_LENGTH:
+				data->rhs_id = sym_table_search(&data->global_table, "length");
+				break;
+
+				// <def_value> -> SUBSTR ( <arg> )
+			case KEYWORD_SUBSTR:
+				data->rhs_id = sym_table_search(&data->global_table, "substr");
+				break;
+			default:
+				return SYNTAX_ERR;
+			}
+		}
 
 		if (data->rhs_id)
 		{
