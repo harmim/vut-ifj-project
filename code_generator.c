@@ -614,10 +614,28 @@ bool generate_stack_op1_to_double()
 }
 
 
+bool generate_stack_op1_to_integer()
+{
+	ADD_INST("FLOAT2R2EINTS");
+
+	return true;
+}
+
+
 bool generate_stack_op2_to_double()
 {
 	ADD_INST("POPS GF@%tmp_op1");
 	ADD_INST("INT2FLOATS");
+	ADD_INST("PUSHS GF@%tmp_op1");
+
+	return true;
+}
+
+
+bool generate_stack_op2_to_integer()
+{
+	ADD_INST("POPS GF@%tmp_op1");
+	ADD_INST("FLOAT2R2EINTS");
 	ADD_INST("PUSHS GF@%tmp_op1");
 
 	return true;

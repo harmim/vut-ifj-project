@@ -454,12 +454,12 @@ static int check_semantics(Prec_rules_enum rule, Symbol_stack_item* op1, Symbol_
 
 	if (retype_op1_to_integer)
 	{
-		// gen code - retype op1 to integer
+		GENERATE_CODE(generate_stack_op2_to_integer);
 	}
 
 	if (retype_op3_to_integer)
 	{
-		// gen code - retype op3 to integer
+		GENERATE_CODE(generate_stack_op1_to_integer);
 	}
 
 	return SYNTAX_OK;

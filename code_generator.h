@@ -213,11 +213,25 @@ bool generate_save_expression_result(char *var_id, Data_type ret_type, Data_type
 bool generate_stack_op1_to_double();
 
 /**
+ * Generates convert data stack top item to integer.
+ *
+ * @return True if it was successful, false otherwise.
+ */
+bool generate_stack_op1_to_integer();
+
+/**
  * Generates convert data stack top-1 item to double.
  *
  * @return True if it was successful, false otherwise.
  */
 bool generate_stack_op2_to_double();
+
+/**
+ * Generates convert data stack top-1 item to integer.
+ *
+ * @return True if it was successful, false otherwise.
+ */
+bool generate_stack_op2_to_integer();
 
 /**
  * Generates If-Then head (before processing If-Then expression).
