@@ -80,7 +80,27 @@
 
 	\subsection{Lexikální analýza}
 
-	TODO
+	Při tvorbě překladače jsme začali implementací lexikální analýzy. Hlavní funkce této analýzy je \texttt{get\_next\_token}, 
+	pomocí níž se čte znak po znaku ze zdrojového souboru a~převádí na strukturu token, která se skládá z~typu a~atributu. 
+	Typy tokenu jsou \texttt{EOF}, \texttt{EOL}, prázdný token, identifikátory, klíčová slova, celé či desetinné číslo, řetězec 
+	a~také porovnávací a~aritmetické operátory a~ostatní znaky, které mohou být použity v~jazyce IFJ2017. Typ atributu je 
+	\texttt{union} a~dělí se podle typu tokenu. Pokud je typ tokenu řetězec nebo identifikátor, pak bude atribut daný řetězec, 
+	když by byl typ tokenu klíčové slovo, přiřadí atributu dané klíčové slovo, pokud číslo, atribut bude ono číslo, u~ostatních 
+	případů není atribut použit. S~takto vytvořeným tokenem poté pracují další analýzy.
+
+	Celý lexikální analyzátor je implementován jako deterministický konečný automat podle předem vytvořené-ho diagramu 
+	\ref{figure:fa_graph}. Konečný automat je v~jazyce C~jako jeden nekonečně opakující se \texttt{switch}, kde každý případ 
+	\texttt{case} je ekvivalentní k~jednomu stavu automatu. Pokud načtený znak nesouhlasí s~žádným znakem, který jazyk povoluje, 
+	program je ukončen a~vrací chybu 1. Jinak se přechází do dalších stavů a~načítají se další znaky, dokud nemáme hotový jeden 
+	token, který potom vracíme a~ukončíme tuto funkci. 
+
+	Za zmínku stojí zpracovávání identifikátorů a~klíčových slov, kde načítáme znaky a~průběžně ukládáme do dynamického pole 
+	a~jakmile odcházíme ze stavu identifikátoru, porovnáváme, jestli načtený řetězec není shodný s~nějakým z~klíčových slov a~podle 
+	toho se rozhodneme, zda vracíme atribut a~typ tokenu klíčové slovo či identifikátor. 
+	
+	Pro zpracovávání escape sekvencí v~řetězci máme vytvořeno pole o velikosti 4, které je zpočátku vynulováno a poté se postupně 
+	naplňuje přečtenými čísly, vždy na pozici podle toho, kolikáté číslo zrovna uvažujeme a nakonec celé třímístné čislo převedeme 
+	do ASCII podoby.
 
 
 	\subsection{Syntaktická analýza}
@@ -116,20 +136,20 @@
 	syntaktické analýzy. Poslední důležitá funkce generuje vytvořený kód na patřičný výstup. Rozhraní
 	nabízí spoustu dalších funkcí pro generování jednotlivých částí programu, např. generování začátku
 	funkce, volání funkce, deklarace proměnnné, příkazu \texttt{input}, funkcí pro zpracování výrazů,
-	podmínek, cyklů, aj. Všechny tyto funkce se volají ve správnou chvíly a~se správnými
+	podmínek, cyklů, aj. Všechny tyto funkce se volají ve správnou chvíli a~se správnými
 	parametry v~průběhu syntaktické analýzy a~syntaktické analýzy výrazů.
 
 	\subsubsection{Začátek generování}
 
 	Na začátku generování jsou inicializovány potřebné datové struktury (které jsou na závěr
-	opět uvolněny), vygenerována hlavička mezikódu, která zahrnuje potřebné náležistoi pro korektní
+	opět uvolněny), vygenerována hlavička mezikódu, která zahrnuje potřebné náležitosti pro korektní
 	interpretaci mezikódu, definici globálních proměnných na globálním rámci a~skok do hlavního
 	těla programu. Poté jsou vygenerovány vestavěné funkce, které jsou zapsány přímo v~jazyce IFJcode17.
 
 	\subsubsection{Generování funkcí}
 
 	Každá funkce je tvořena návěštím ve tvaru \texttt{\$identifikator\_funkce} a~svým lokálním rámcem.
-	Pro funkce se vždy generuje výchozí návratová hodnota podle jejícho návratového datového typu,
+	Pro funkce se vždy generuje výchozí návratová hodnota podle jejího návratového datového typu,
 	která se ukládá na lokální rámec, který je po odchodu z~funkce dostupný jako dočasný rámec.
 	Před zavoláním funkce jsou hodnoty parametrů uloženy do dočasného rámce s~číslem, které
 	odpovídá pořadí daného parametru a~po vstupu do funkce jsou všechny předané parametry uloženy na
@@ -159,7 +179,7 @@
 
 	\subsubsection{CMake}
 
-	Při vývoji, ladění a~testování projketu někteří z~nás používaly CMake, protože překlad tímto nástrojem
+	Při vývoji, ladění a~testování projketu někteří z~nás používali CMake, protože překlad tímto nástrojem
 	je integrován ve vývojovém prostředí CLion, které většina členů týmu používala a~protože nastavení pravidel
 	pro překlad tímto nástrojem je jednoduché.
 
@@ -172,7 +192,7 @@
 
 	\subsubsection{GNU Make}
 
-	Jedním z~požadavdků pro odevzdání projektu bylo přiložit k~odevzdanému projektu i~soubor \texttt{Makefile} a~přeložení
+	Jedním z~požadavků pro odevzdání projektu bylo přiložit k~odevzdanému projektu i~soubor \texttt{Makefile} a~přeložení
 	projektu příkazem \texttt{make}. Z~tohoto důvodu jsme vytvořili překladový systém i~pomocí nástroje GNU Make.
 
 	V~souboru \texttt{Makefile} jsou nastavena pravidla pro překlad. Je zde nastaven překladač \texttt{gcc}
@@ -197,9 +217,9 @@
 
 	Implementovali jsme tabulku s~rozptýlenými položkami, která slouží jako tabulka symbolů, což byl mimo
 	jiné i~požadavek vyplývající ze zadání, který souvisí s~předmětem IAL. Tabulku jsme implementovali
-	jako tebulku s~explicitním zřetězením synonym, protože jsome potřebovali, aby počet položek,
+	jako tabulku s~explicitním zřetězením synonym, protože jsome potřebovali, aby počet položek,
 	který do ní můžeme uložit byl dynamický a~teoreticky neomezený. Pro zřetězení synonym jsme použili
-	lineárně vázené seznamy. Velikost mapovacího pole jsme dymenzovali tak, aby byla rovna prvočíslu a~její
+	lineárně vázané seznamy. Velikost mapovacího pole jsme dimenzovali tak, aby byla rovna prvočíslu a~její
 	naplnění nepřesáhlo 75\,\%. Jako optimální velikost jsme tedy zvolili číslo 27\,457.
 
 	Jako mapovací funkci jsme použili GNU ELF Hash použitou v~algoritmu, který používá UNIX ELF.
@@ -207,7 +227,7 @@
 	více viz \cite{PJWHashFunction2017}. Funkci jsme upravili tak, aby vracela datový typ a~hodnotu,
 	které je přípustná pro naše mapovací pole.
 
-	Každý položka tabulky obsahuje unikátní klíč v~podobě řetězce, kterým je identifikátor funkce
+	Každá položka tabulky obsahuje unikátní klíč v~podobě řetězce, kterým je identifikátor funkce
 	či proměnné. Dále obsahuje ukazatel na další prvek (synonymum) a~datovou část. Datová část obsahuje
 	informaci o~tom, jakého datového typu je daný symbol (v~případě funkce se jedná o~datový typ
 	návratové hodnoty), pravdivostní hodnoty, které indikují, jestli byl daný symbol již definován
@@ -225,7 +245,7 @@
 
 	\subsection{Dynamický řetězec}
 
-	Vytvořili jsme strukturu \texttt{struct dynamic\_string} pro práci s~řezězci dynamické délky, kterou používáme
+	Vytvořili jsme strukturu \texttt{struct dynamic\_string} pro práci s~řetězci dynamické délky, kterou používáme
 	např. pro ukládání řezězce nebo identifikátoru u~atributu tokenu v~lexikální analýze, protože dopředu nevíme,
 	jak bude tento řetězec dlouhý.
 
@@ -299,7 +319,7 @@
 	Projekt nás zprvu trochu zaskočil svým rozsahem a~složitostí. Postupem času, až jsme získali dostatek
 	znalostí o~tvorbě překladačů na přednáškách IFJ, jsme projekt začali řešit.
 
-	Náš tým jsme měli sestaven velmi brzy, byly jsme již předem domluveni na komunikačních kanálech,
+	Náš tým jsme měli sestaven velmi brzy, byli jsme již předem domluveni na komunikačních kanálech,
 	osobních schůzkách a~na používání verzovacího systému, tudíž jsme s~týmovou prací neměli žádný
 	problém a~pracovalo se nám společně velmi dobře.
 
