@@ -8,6 +8,8 @@
 \usepackage[utf8]{inputenc}
 \usepackage[left=2cm, top=3cm, text={17cm, 24cm}]{geometry}
 \usepackage{times}
+\usepackage{verbatim}
+\usepackage{enumitem}
 \usepackage{graphicx} % vkládání obrázků
 \usepackage[unicode]{hyperref}
 \hypersetup{
@@ -113,8 +115,31 @@
 
 	\subsubsection{Zpracování výrazů pomocí precedenční syntaktické analýzy}
 
-	TODO
+	Precedenční analýza je v~syntaktické analýze definována a~volána jako ostatní pravidla v~LL gramatice,
+	ale je zvlášť implementována v~souboru \texttt{expression.c}, a~její rozhraní je v~souboru \texttt{expression.h}.
 
+	Při zpracovávání výrazů je použita precedenční tabulka \ref{table:prec_table}. Jelikož operátory + a~– mají
+	stejnou asociativitu a~prioritu, mohli jsme je zjednodušit do jednoho sloupce a~řádku tabulky \texttt{+ -}.
+	Totéž jsme mohli udělat s~operátory * a~/ (v~tabulce sloupec a~řádek \texttt{* /}) a~také všemi relačními operátory
+	(v~tabulce sloupec a~řádek \texttt{r}). Řádek a~sloupec \texttt{i} symbolizuje identifikátor, číselnou hodnotu
+	nebo řetězec. Pro získání indexu ze symbolu do tabulky jsme si vytvořili funkci \texttt{get\_prec\_table\_index},
+	které se jako parametr zadá symbol, a~vrátí index do tabulky. Mezi povolené symboly ve výrazech patří všechny
+	operátory, literály, které jsou v tabulce zastoupeny již dříve popsaným \texttt{i}, a~závorky. Tyto symboly jsou
+	terminály. Všechny ostatní symboly, které výraz obsahovat nemůže, jsou zastoupeny symbolem \texttt{\$}. Řádky
+	tabulky označují vrchní terminál v~zásobníku symbolů a~sloupce symbol v~aktuálním tokenu.
+
+	Po spuštění analýzy se podle vrchního terminálu v~zásobníku symbolů a~symbolu aktuálního tokenu provádějí různé
+	operace a~v~některých případech se volá funkce \texttt{get\_next\_token}.
+
+	Pokud znak z~tabulky je \texttt{<}, vložíme zarážku za vrchní terminál, aktuální symbol vložíme na vrch zásobníku
+	a~zavoláme funkci \texttt{get\_next\_token}. Pokud znak z~tabulky je \texttt{>} a~existuje pravidlo, podle kterého
+	se dají zredukovat položky zásobníku symbolů od nejvrchnější položky až po zarážku, tak jich zredukujeme a~odstraníme
+	zarážku. Během provádění redukce podle stanovených pravidel se otestuje sémantika levého a~pravého operandu a~pokud
+	je to potřebné a~možné, provede se implicitní přetypování jednoho nebo obou operandů. Pokud znak je \texttt{=} aktuální
+	symbol vložíme na vrch zásobníku a~zavoláme funkci \texttt{get\_next\_token}. To opakujeme až do kdy na místě v~tabulce
+	určeném vrchním terminálem v~zásobníku symbolů a~symbolem aktuálního tokenu žádný znak není. Pokud vrchní terminál
+	i~aktuální symbol je \texttt{\$} a~na vrchu zásobníku zůstal jeden výsledný neterminál, syntaktická analýza je
+	úspěšná, v~jiných případech končí neúspěšně.
 
 	\subsection{Sémantická analýza}
 
@@ -261,7 +286,16 @@
 
 	\subsection{Zásobník symbolů pro precedenční syntaktickou analýzu}
 
-	TODO
+	Implementovali jsme zásobník symbolů v~souboru \texttt{symstack.c}, který používáme při precedenční syntaktické analýze.
+	Jeho rozhraní je v~souboru \texttt{symstack.h}. Má implementovány základní zásobníkové operace jako \texttt{symbol\_stack\_push},
+	\texttt{symbol\_stack\_pop} a~\texttt{symbol\_stack\_top}. Pro účely precedenční syntaktické analýzy jsme implementovali další
+	funkce jako \texttt{symbol\_stack\_top\_terminal}, která vrátí nejvrchnější terminál, a~funkci
+	\texttt{symbol\_stack\_insert\_after\_top\_terminal}, která vloží symbol za nejvrchnější terminál.
+
+	Struktura položky zásobníku obsahuje symbol, který jsme získali během precedenční analýzy z~tokenu pomocí funkce
+	\texttt{get\_symbol\_from\_token}, jejíž parametrem je ukazatel na token, a~vrátí symbol ve formě výčtového typu.
+	Dále obsahuje datový typ tohoto symbolu, který je inicializován pouze tehdy, pokud symbol může mít datový typ,
+	a~používá se při sémantické kontrole. Struktura také obsahuje ukazatel na další položku.
 
 
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Práce v týmu %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -360,16 +394,78 @@
 
 	\section{LL -- gramatika}
 
-	TODO
+	\begin{enumerate}[noitemsep]
+  		\item \verb|<prog> -> DECLARE FUNCTION ID ( <params> ) AS <type> <prog>|
+		\item \verb|<prog> -> FUNCTION ID ( <params> ) AS <type> EOL <statement> END| \newline \verb|FUNCTION <prog>|
+		\item \verb|<prog> -> EOL <prog>|
+		\item \verb|<prog> -> <scope>|
 
+		\item \verb|<scope> -> SCOPE EOL <statement> END SCOPE <end>|
+		\item \verb|<end> -> EOL <end>|
+		\item \verb|<end> -> EOF|
+
+		\item \verb|<params> -> ID AS <type> <param_n>|
+		\item \verb|<params> -> |$\varepsilon$
+
+		\item \verb|<param_n> -> , ID AS <type> <param_n>|
+		\item \verb|<param_n> -> |$\varepsilon$
+
+		\item \verb|<statement> -> DIM ID AS <data_type> <def_var> EOL <statement>|
+		\item \verb|<statement> -> IF <expression> THEN EOL <statement> ELSE EOL| \newline \verb|<statement> END IF EOL <statement>|
+		\item \verb|<statement> -> DO WHILE <expression> EOL <statement> LOOP EOL| \newline \verb|<statement>|
+		\item \verb|<statement> -> ID = <def_value> EOL <statement>|
+		\item \verb|<statement> -> INPUT ID EOL <statement>|
+		\item \verb|<statement> -> PRINT <expression> ; <print> EOL <statement>|
+		\item \verb|<statement> -> RETURN <expression> EOL <statement>|
+		\item \verb|<statement> -> |$\varepsilon$
+
+		\item \verb|<def_var> -> = <expression>|
+		\item \verb|<def_var> -> |$\varepsilon$
+
+		\item \verb|<def_value> -> ID ( <arg> )|
+		\item \verb|<def_value> -> ASC ( <arg> )|
+		\item \verb|<def_value> -> CHR ( <arg> )|
+		\item \verb|<def_value> -> LENGTH ( <arg> )|
+		\item \verb|<def_value> -> SUBSTR ( <arg> )|
+		\item \verb|<def_value> -> <expression>|
+
+		\item \verb|<arg> -> <value> <arg_n>|
+		\item \verb|<arg> -> |$\varepsilon$
+
+		\item \verb|<arg_n> -> , <value> <arg_n>|
+		\item \verb|<arg_n> -> |$\varepsilon$
+
+		\item \verb|<value> -> INT_VALUE|
+		\item \verb|<value> -> DOUBLE_VALUE|
+		\item \verb|<value> -> STRING_VALUE|
+		\item \verb|<value> -> ID|
+
+		\item \verb|<print> -> <expression> ; <print>|
+		\item \verb|<print> -> |$\varepsilon$
+
+		\item \verb|<type> -> INTEGER|
+		\item \verb|<type> -> DOUBLE|
+		\item \verb|<type> -> STRING|
+	\end{enumerate}
+
+	\newpage
 
 	\section{LL -- tabulka}
 
-	TODO
-
+	\begin{table}[!ht]
+		\centering
+		\includegraphics[width=1\linewidth]{inc/LL_table.pdf}
+		\caption{LL tabulka použitá při syntaktické analýze}
+		\label{table:ll_table}
+	\end{table}
 
 	\section{Precedenční tabulka}
 
-	TODO
+	\begin{table}[!ht]
+		\centering
+		\includegraphics[width=0.7\linewidth]{inc/prec_table.pdf}
+		\caption{Precedenční tabulka použitá při precedenční syntaktické analýze výrazů}
+		\label{table:prec_table}
+	\end{table}
 
 \end{document}
