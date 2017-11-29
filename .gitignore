@@ -80,3 +80,4 @@ ifj17_compiler
 
 # Logs from IFJcode17-toolkit tests
 /log/
+/Debug

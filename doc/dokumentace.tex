@@ -107,11 +107,12 @@
 
 	\subsection{Syntaktická analýza}
 
-	TODO
+	Nejdůležitější částí celého programu je syntaktická analýza.
 
-	\subsubsection{Syntaktická analýza založená na LL -- gramatice využívající metodu rekurzivního sestupu}
-
-	TODO
+	Až na výrazi se řídí LL gramatikou a~tedy metodou rekurzivního sestupu podle pravidel v LL tabulce, která je v~příloze.	Každé pravidlo má svou vlastní funkci, která dostává parametr ukazatel na PData, což je struktura obsahující proměnné nutné pro správné fungování analýzi.
+	Syntaktická analýza žádá po lexikálním analyzátoru tokeny pomocí \texttt{get\_next\_token}. Tyto tokeny načítá lexikální analyzátor ze zdrojového souboru a~zároveň provádí lexikální analýzu.
+	
+	Aby se příkaz návratu z funkce nevyskytoval v~hlavním těle programu jsme vyřešili pomocí bool proměnné \texttt{in\_function}, která symbolizuje, že se právě nacházíme ve funkci.
 
 	\subsubsection{Zpracování výrazů pomocí precedenční syntaktické analýzy}
 
@@ -143,8 +144,7 @@
 
 	\subsection{Sémantická analýza}
 
-	TODO
-
+	Ve~struktuře PData jsou uloženy tabulky symbolů, lokální pro lokální proměnné, a~globální pro funkce. Tabulky symbolů jsou implementovány jako tabulky s~náhodným rozptýlením a~slouží ke kontrole, zda se daný identifikátor existuje a~zda souhlasí jeho datový typ, případně návratová hodnota.
 
 	\subsection{Generování cílového kódu}
 
