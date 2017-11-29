@@ -1,6 +1,8 @@
 % Author: Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
 
+
 \documentclass[a4paper, 11pt]{article}
+
 
 \usepackage[czech]{babel}
 \usepackage[utf8]{inputenc}
@@ -14,7 +16,9 @@
 	citecolor = red
 }
 
+
 \newcommand{\RNum}[1]{\uppercase\expandafter{\romannumeral #1\relax}} % makro na sázení římských čísel
+
 
 \begin{document}
 
@@ -60,12 +64,19 @@
 
 	\section{Úvod}
 
-	Cílem projektu bylo vytvořit program v~jazyce C, který načte zdrojový kód zapsaný ve zdrojovém jazyce IFJ17,
+	Cílem projektu bylo vytvořit program v~jazyce~C, který načte zdrojový kód zapsaný ve zdrojovém jazyce IFJ17,
 	jenž je zjednodušenou podmnožinou jazyka FreeBASIC a~přeloží jej do cílového jazyka IFJcode17 (mezikód).
+
+	Program funguje jako konzolová aplikace, které načítá zdrojový program ze standardního vstupu a~generuje
+	výsledný mezikód na standardní výstup nebo v~případě chyby vrací odpovídající chybový kód.
 
 
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Návrh a implementace %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\section{Návrh a~implementace}
+
+	Projekt jsme sestavili z~několika námi implementovaných dílčích částí, které jsou představeny v~této kapitole.
+	Je zde také uvedeno, jakým způsobem spolu jednotlivé dílčí části spolupracují.
+
 
 	\subsection{Lexikální analýza}
 
@@ -73,6 +84,14 @@
 
 
 	\subsection{Syntaktická analýza}
+
+	TODO
+
+	\subsubsection{Syntaktická analýza založená na LL -- gramatice využívající metodu rekurzivního sestupu}
+
+	TODO
+
+	\subsubsection{Zpracování výrazů pomocí precedenční syntaktické analýzy}
 
 	TODO
 
@@ -84,7 +103,53 @@
 
 	\subsection{Generování cílového kódu}
 
-	TODO
+	Generování cílového kódu pro nás znamená generování mezikódu IFJcode17. Kód je generován na standardní výstup
+	po dokončení všech analýz, přičemž jednotlivé dílčí části jsou generovány v~průběhu analýz do interní paměti
+	programu. Při generování mezikódu jsou generovány i~komentáře pro jeho zpřehlednění.
+
+	\subsubsection{Rozhraní generátoru kódu}
+
+	Generování kódu je implementováno jako samostatný modul v~souboru \texttt{code\_generator.c},
+	jehož rozhraní se nachází v~souboru \texttt{code\_generator.h} Rozhraní nabízí 3 základní funkce.
+	Jedná se o~funkci, která připraví generování kódu, tato funkce se volá na začátku syntaktické analýzy.
+	Funkce, která uvolní z~paměti všechny rezervované prostředky generátorem kódu se volá po dokončení
+	syntaktické analýzy. Poslední důležitá funkce generuje vytvořený kód na patřičný výstup. Rozhraní
+	nabízí spoustu dalších funkcí pro generování jednotlivých částí programu, např. generování začátku
+	funkce, volání funkce, deklarace proměnnné, příkazu \texttt{input}, funkcí pro zpracování výrazů,
+	podmínek, cyklů, aj. Všechny tyto funkce se volají ve správnou chvíly a~se správnými
+	parametry v~průběhu syntaktické analýzy a~syntaktické analýzy výrazů.
+
+	\subsubsection{Začátek generování}
+
+	Na začátku generování jsou inicializovány potřebné datové struktury (které jsou na závěr
+	opět uvolněny), vygenerována hlavička mezikódu, která zahrnuje potřebné náležistoi pro korektní
+	interpretaci mezikódu, definici globálních proměnných na globálním rámci a~skok do hlavního
+	těla programu. Poté jsou vygenerovány vestavěné funkce, které jsou zapsány přímo v~jazyce IFJcode17.
+
+	\subsubsection{Generování funkcí}
+
+	Každá funkce je tvořena návěštím ve tvaru \texttt{\$identifikator\_funkce} a~svým lokálním rámcem.
+	Pro funkce se vždy generuje výchozí návratová hodnota podle jejícho návratového datového typu,
+	která se ukládá na lokální rámec, který je po odchodu z~funkce dostupný jako dočasný rámec.
+	Před zavoláním funkce jsou hodnoty parametrů uloženy do dočasného rámce s~číslem, které
+	odpovídá pořadí daného parametru a~po vstupu do funkce jsou všechny předané parametry uloženy na
+	lokální rámce se svým názvev. Při generování návratu z~funkce je předán výsledek zpracovaného
+	výrazu do proměnné s~návratovou hodnotou funkce a~proveden skok na konec funkce.
+
+	\subsubsection{Generování výrazů}
+
+	Všechny výrazy jsou během syntaktické analýzy výrazů ukládány na datový zásobník a~v~pravou
+	chvíli jsou provedeny patřičné operace s~hodnotami na vrcholu zásobníku. Hodnota zpracovaného
+	výrazu se ukládá do globální proměnné na globálním rámci.
+
+	\subsubsection{Generování návěští}
+
+	Všechna návěští, pokud neuvažujeme návěští pro funkce a~jiná speciální návěští, jsou generovány
+	ve tvaru \texttt{\$identifikator\_funkce\%label\_deep\%label\_index}, kde
+	\texttt{identifikator\_funkce} zajistí unikátnost návěští mezi jednotlivými funkcemi,
+	\texttt{label\_deep} je hloubka zanoření návěští (například u~podmínek a~cyklů)
+	a~\texttt{label\_index} je číselná hodnota, která se inkrementuje s~každým dalším návěštím uvnitř
+	dané funkce.
 
 
 	\subsection{Překladový systém}
@@ -99,7 +164,7 @@
 	pro překlad tímto nástrojem je jednoduché.
 
 	V~souboru \texttt{CMakeLists.txt} jsou nastavena pravidla pro překlad. Je zde nastaven překladač \texttt{gcc}
-	a~všechny potřebné parametry pro překlad. Dále je zde uvedeno, že se pro překlad mají používít všechny soubory s~příponou
+	a~všechny potřebné parametry pro překlad. Dále je zde uvedeno, že se pro překlad mají používat všechny soubory s~příponou
 	\texttt{.c} a~\texttt{.h} a~taky je zde uveden název spustitelného souboru.
 
 	Soubory pro překlad je možné vygenerovat příkazem \texttt{cmake~.} a~překlad provést příkazem \texttt{cmake~--build~.}
@@ -121,12 +186,41 @@
 	spouštění automatických testů a~čištění dočasných souborů.
 
 
-	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Speciální algoritmy a datové struktury %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Speciální algoritmy a datové struktury %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\section{Speciální algoritmy a~datové struktury}
+
+	Při tvorbě překladače jsme implementovali několik speciálních datových struktur,
+	které jsou v~této kapitole představeny.
+
 
 	\subsection{Tabulka s~rozptýlenými položkami}
 
-	TODO
+	Implementovali jsme tabulku s~rozptýlenými položkami, která slouží jako tabulka symbolů, což byl mimo
+	jiné i~požadavek vyplývající ze zadání, který souvisí s~předmětem IAL. Tabulku jsme implementovali
+	jako tebulku s~explicitním zřetězením synonym, protože jsome potřebovali, aby počet položek,
+	který do ní můžeme uložit byl dynamický a~teoreticky neomezený. Pro zřetězení synonym jsme použili
+	lineárně vázené seznamy. Velikost mapovacího pole jsme dymenzovali tak, aby byla rovna prvočíslu a~její
+	naplnění nepřesáhlo 75\,\%. Jako optimální velikost jsme tedy zvolili číslo 27\,457.
+
+	Jako mapovací funkci jsme použili GNU ELF Hash použitou v~algoritmu, který používá UNIX ELF.
+	Tato funkce je variantou PJW Hash. Použití této mapovací funkce jsme vyhodnotili jako nejvhodnější,
+	více viz \cite{PJWHashFunction2017}. Funkci jsme upravili tak, aby vracela datový typ a~hodnotu,
+	které je přípustná pro naše mapovací pole.
+
+	Každý položka tabulky obsahuje unikátní klíč v~podobě řetězce, kterým je identifikátor funkce
+	či proměnné. Dále obsahuje ukazatel na další prvek (synonymum) a~datovou část. Datová část obsahuje
+	informaci o~tom, jakého datového typu je daný symbol (v~případě funkce se jedná o~datový typ
+	návratové hodnoty), pravdivostní hodnoty, které indikují, jestli byl daný symbol již definován
+	a~zda je symbol globální. Posledním prvkem datové části, který se používá pouze v~případě, že se
+	jedná o~funkci, je počet a~datové typy formálních parametrů funkce, který je ve formátu řetezce
+	(Pokud např. daná funkce má dva parametry, první typu \texttt{Double} a~druhý typu \texttt{Integer},
+	uloží se následující řetězec \texttt{di}.).
+
+	Implementovali jsme i~několik potřebných funkcí, které tvoří rozhraní pro práci s~tabulkou.
+	Jedná se o~následující funkce: inicializace, přidání nové položky, přidání určitého parametru
+	pro konkrétní položku tabulky (v případě, že se jedná o~funkci), vyhledání položky, odstranění
+	položky a~uvolnění tabulky z paměti. Při implementaci jsme se inspirovali studijní literaturou
+	předmětu IAL \cite{Honzik1991}.
 
 
 	\subsection{Dynamický řetězec}
@@ -145,12 +239,17 @@
 	paměti se velikost paměti zvýší.
 
 
+	\subsection{Zásobník symbolů pro precedenční syntaktickou analýzu}
+
+	TODO
+
+
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Práce v týmu %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\section{Práce v~týmu}
 
 	\subsection{Způsob práce v~týmu}
 
-	Na projektu jsme začali pracovat začátkem října. Práci jsme si dělili postupně, tj. neměli jsme od začátku
+	Na projektu jsme začali pracovat koncem října. Práci jsme si dělili postupně, tj. neměli jsme od začátku
 	stanovený kompletní plán rozdělení práce. Na dílčích částech projektu pracovali většinou jednotlivci nebo
 	dvojice členů týmu. Nejprve jsme si stanovili strukturu projektu a~vytvořili překladový systém.
 
@@ -183,10 +282,11 @@
 			\hline
 			Člen týmu & Přidělená práce \\ \hline
 			\textbf{Dominik Harmim} & \begin{tabular}{l} vedení týmu, organizace práce, dohlížení na provádění práce,
-				konzultace, \\ kontrola, testování, dokumentace, struktura projektu \end{tabular} \\
-			Vojtěch Hertl & \begin{tabular}{l} lexikální analýza \end{tabular} \\
-			Timotej Halás & \begin{tabular}{l} syntaktická analýza, sémantická analýza \end{tabular} \\
-			Matej Karas & \begin{tabular}{l} syntaktická analýza, sémantická analýza \end{tabular} \\ \hline
+				konzultace, \\ kontrola, testování, dokumentace, struktura projektu, generování cílového kódu \end{tabular} \\
+			Vojtěch Hertl & \begin{tabular}{l} lexikální analýza, testování, dokumentace, prezentace \end{tabular} \\
+			Timotej Halás & \begin{tabular}{l} syntaktická analýza, syntaktická analýza výrazů, sémantická analýza, testování, \\
+				 dokumentace \end{tabular} \\
+			Matej Karas & \begin{tabular}{l} syntaktická analýza, sémantická analýza, testování, dokumentace \end{tabular} \\ \hline
 		\end{tabular}
 		\caption{Rozdělení práce v~týmu mezi jednotlivými členy}
 		\label{table:rozdeleni_prace}
@@ -196,7 +296,24 @@
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Závěr %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\section{Závěr}
 
-	TODO
+	Projekt nás zprvu trochu zaskočil svým rozsahem a~složitostí. Postupem času, až jsme získali dostatek
+	znalostí o~tvorbě překladačů na přednáškách IFJ, jsme projekt začali řešit.
+
+	Náš tým jsme měli sestaven velmi brzy, byly jsme již předem domluveni na komunikačních kanálech,
+	osobních schůzkách a~na používání verzovacího systému, tudíž jsme s~týmovou prací neměli žádný
+	problém a~pracovalo se nám společně velmi dobře.
+
+	Na projektu jsme začali pracovat trochu později, takže jsme neměli časovou rezervu, ale nakonec
+	jsme všechno bez problému stihli. Jednotlivé části projektu jsme řešili většinou individuálně za použití
+	znalostí z~přednáškek nebo materiálů do předmětů IFJ a~IAL.
+
+	V~průběhu vývoje jsme se potýkali s~menšími problémy týkajícími se nejasností v~zadání, ale
+	tyto jsme vyřešili díky fóru k~projektu. Správnost řešení jsme si ověřili automatickými
+	testy a~pokusným odevzdáním, díky čemuž jsme byli schopni projekt ještě více odladit.
+
+	Tento projekt nám celkově přinesl spoustu znalostí ohledně fungování překladačů, prakticky nám
+	objasnil probíranou látku v~předmětech IFJ a~IAL a~přinesl nám zkušennosti s~projekty tohoto rozsahu.
+
 
 
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Citace %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -221,12 +338,12 @@
 	\end{figure}
 	\clearpage
 
-	\section{LL-gramatika}
+	\section{LL -- gramatika}
 
 	TODO
 
 
-	\section{LL-tabulka}
+	\section{LL -- tabulka}
 
 	TODO
 
