@@ -1,4 +1,7 @@
 % Author: Dominik Harmim <xharmi00@stud.fit.vutbr.cz>
+% Author: Vojtěch Hertl <xhertl04@stud.fit.vutbr.cz>
+% Author: Timotej Halás <xhalas10@stud.fit.vutbr.cz>
+% Author: Matej Karas <xkaras34@stud.fit.vutbr.cz>
 
 
 \documentclass[a4paper, 11pt]{article}
@@ -23,6 +26,7 @@
 
 
 \begin{document}
+
 
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Titulní stránka %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\begin{titlepage}
@@ -53,11 +57,13 @@
 	\end{titlepage}
 
 
+
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Obsah %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\pagenumbering{roman}
 	\setcounter{page}{1}
 	\tableofcontents
 	\clearpage
+
 
 
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Úvod %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -73,6 +79,7 @@
 	výsledný mezikód na standardní výstup nebo v~případě chyby vrací odpovídající chybový kód.
 
 
+
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Návrh a implementace %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\section{Návrh a~implementace}
 
@@ -82,26 +89,26 @@
 
 	\subsection{Lexikální analýza}
 
-	Při tvorbě překladače jsme začali implementací lexikální analýzy. Hlavní funkce této analýzy je \texttt{get\_next\_token}, 
-	pomocí níž se čte znak po znaku ze zdrojového souboru a~převádí na strukturu token, která se skládá z~typu a~atributu. 
-	Typy tokenu jsou \texttt{EOF}, \texttt{EOL}, prázdný token, identifikátory, klíčová slova, celé či desetinné číslo, řetězec 
-	a~také porovnávací a~aritmetické operátory a~ostatní znaky, které mohou být použity v~jazyce IFJ2017. Typ atributu je 
-	\texttt{union} a~dělí se podle typu tokenu. Pokud je typ tokenu řetězec nebo identifikátor, pak bude atribut daný řetězec, 
-	když by byl typ tokenu klíčové slovo, přiřadí atributu dané klíčové slovo, pokud číslo, atribut bude ono číslo, u~ostatních 
+	Při tvorbě překladače jsme začali implementací lexikální analýzy. Hlavní funkce této analýzy je \texttt{get\_next\_token},
+	pomocí níž se čte znak po znaku ze zdrojového souboru a~převádí na strukturu \texttt{token}, která se skládá z~typu a~atributu.
+	Typy tokenu jsou \texttt{EOF}, \texttt{EOL}, prázdný token, identifikátory, klíčová slova, celé či desetinné číslo, řetězec
+	a~také porovnávací a~aritmetické operátory a~ostatní znaky, které mohou být použity v~jazyce IFJ2017. Typ atributu je
+	\texttt{union} a~dělí se podle typu tokenu. Pokud je typ tokenu řetězec nebo identifikátor, pak bude atribut daný řetězec,
+	když by byl typ tokenu klíčové slovo, přiřadí atributu dané klíčové slovo, pokud číslo, atribut bude ono číslo, u~ostatních
 	případů není atribut použit. S~takto vytvořeným tokenem poté pracují další analýzy.
 
-	Celý lexikální analyzátor je implementován jako deterministický konečný automat podle předem vytvořené-ho diagramu 
-	\ref{figure:fa_graph}. Konečný automat je v~jazyce C~jako jeden nekonečně opakující se \texttt{switch}, kde každý případ 
-	\texttt{case} je ekvivalentní k~jednomu stavu automatu. Pokud načtený znak nesouhlasí s~žádným znakem, který jazyk povoluje, 
-	program je ukončen a~vrací chybu 1. Jinak se přechází do dalších stavů a~načítají se další znaky, dokud nemáme hotový jeden 
-	token, který potom vracíme a~ukončíme tuto funkci. 
+	Celý lexikální analyzátor je implementován jako deterministický konečný automat podle předem vytvořeného diagramu
+	\ref{figure:fa_graph}. Konečný automat je v~jazyce C~jako jeden nekonečně opakující se \texttt{switch}, kde každý případ
+	\texttt{case} je ekvivalentní k~jednomu stavu automatu. Pokud načtený znak nesouhlasí s~žádným znakem, který jazyk povoluje,
+	program je ukončen a~vrací chybu 1. Jinak se přechází do dalších stavů a~načítají se další znaky, dokud nemáme hotový jeden
+	token, který potom vracíme a~ukončíme tuto funkci.
 
-	Za zmínku stojí zpracovávání identifikátorů a~klíčových slov, kde načítáme znaky a~průběžně ukládáme do dynamického pole 
-	a~jakmile odcházíme ze stavu identifikátoru, porovnáváme, jestli načtený řetězec není shodný s~nějakým z~klíčových slov a~podle 
-	toho se rozhodneme, zda vracíme atribut a~typ tokenu klíčové slovo či identifikátor. 
-	
-	Pro zpracovávání escape sekvencí v~řetězci máme vytvořeno pole o velikosti 4, které je zpočátku vynulováno a poté se postupně 
-	naplňuje přečtenými čísly, vždy na pozici podle toho, kolikáté číslo zrovna uvažujeme a nakonec celé třímístné čislo převedeme 
+	Za zmínku stojí zpracovávání identifikátorů a~klíčových slov, kde načítáme znaky a~průběžně ukládáme do dynamického pole
+	a~jakmile odcházíme ze stavu identifikátoru, porovnáváme, jestli načtený řetězec není shodný s~nějakým z~klíčových slov a~podle
+	toho se rozhodneme, zda vracíme atribut a~typ tokenu klíčové slovo či identifikátor.
+
+	Pro zpracovávání escape sekvencí v~řetězci máme vytvořeno pole o velikosti 4, které je zpočátku vynulováno a poté se postupně
+	naplňuje přečtenými čísly, vždy na pozici podle toho, kolikáté číslo zrovna uvažujeme a nakonec celé třímístné čislo převedeme
 	do ASCII podoby.
 
 
@@ -109,42 +116,51 @@
 
 	Nejdůležitější částí celého programu je syntaktická analýza.
 
-	Až na výrazi se řídí LL gramatikou a~tedy metodou rekurzivního sestupu podle pravidel v LL tabulce, která je v~příloze.	Každé pravidlo má svou vlastní funkci, která dostává parametr ukazatel na PData, což je struktura obsahující proměnné nutné pro správné fungování analýzi.
-	Syntaktická analýza žádá po lexikálním analyzátoru tokeny pomocí \texttt{get\_next\_token}. Tyto tokeny načítá lexikální analyzátor ze zdrojového souboru a~zároveň provádí lexikální analýzu.
-	
-	Aby se příkaz návratu z funkce nevyskytoval v~hlavním těle programu jsme vyřešili pomocí bool proměnné \texttt{in\_function}, která symbolizuje, že se právě nacházíme ve funkci.
+	Až na výrazy se syntaktická analýza řídí LL -- gramatikou a~metodou rekurzivního sestupu podle pravidel v~LL -- tabulce
+	\ref{table:ll_gramatika}. Každé pravidlo má svou vlastní funkci, která dostává přes parametr ukazatel na \texttt{PData},
+	což je struktura obsahující proměnné nutné pro správné fungování analýzy. Syntaktická analýza žádá po lexikálním
+	analyzátoru tokeny pomocí \texttt{get\_next\_token}. Tyto tokeny načítá lexikální analyzátor ze zdrojového souboru
+	a~zároveň provádí lexikální analýzu.
+
+	Aby se příkaz návratu z~funkce nevyskytoval v~hlavním těle programu, vyřešili jsme to pomocí bool proměnné \texttt{in\_function},
+	která symbolizuje, že se právě nacházíme ve funkci.
 
 	\subsubsection{Zpracování výrazů pomocí precedenční syntaktické analýzy}
 
-	Precedenční analýza je v~syntaktické analýze definována a~volána jako ostatní pravidla v~LL gramatice,
+	Precedenční analýza je v~syntaktické analýze definována a~volána jako ostatní pravidla v~LL -- gramatice,
 	ale je zvlášť implementována v~souboru \texttt{expression.c}, a~její rozhraní je v~souboru \texttt{expression.h}.
 
-	Při zpracovávání výrazů je použita precedenční tabulka \ref{table:prec_table}. Jelikož operátory + a~– mají
+	Při zpracovávání výrazů je použita precedenční tabulka \ref{table:prec_table}. Jelikož operátory \texttt{+} a~– mají
 	stejnou asociativitu a~prioritu, mohli jsme je zjednodušit do jednoho sloupce a~řádku tabulky \texttt{+ -}.
-	Totéž jsme mohli udělat s~operátory * a~/ (v~tabulce sloupec a~řádek \texttt{* /}) a~také všemi relačními operátory
-	(v~tabulce sloupec a~řádek \texttt{r}). Řádek a~sloupec \texttt{i} symbolizuje identifikátor, číselnou hodnotu
-	nebo řetězec. Pro získání indexu ze symbolu do tabulky jsme si vytvořili funkci \texttt{get\_prec\_table\_index},
-	které se jako parametr zadá symbol, a~vrátí index do tabulky. Mezi povolené symboly ve výrazech patří všechny
-	operátory, literály, které jsou v tabulce zastoupeny již dříve popsaným \texttt{i}, a~závorky. Tyto symboly jsou
-	terminály. Všechny ostatní symboly, které výraz obsahovat nemůže, jsou zastoupeny symbolem \texttt{\$}. Řádky
-	tabulky označují vrchní terminál v~zásobníku symbolů a~sloupce symbol v~aktuálním tokenu.
+	Totéž jsme mohli udělat s~operátory \texttt{*} a~\texttt{/} (v~tabulce sloupec a~řádek \texttt{* /}) a~také
+	všemi relačními operátory (v~tabulce sloupec a~řádek \texttt{r}). Řádek a~sloupec \texttt{i} symbolizuje
+	identifikátor, číselnou hodnotu nebo řetězec. Pro získání indexu ze symbolu do tabulky jsme si vytvořili
+	funkci \texttt{get\_prec\_table\_index}, které se jako parametr zadá symbol, a~vrátí index do tabulky.
+	Mezi povolené symboly ve výrazech patří všechny operátory, literály, které jsou v~tabulce zastoupeny již
+	dříve popsaným \texttt{i}, a~závorky. Tyto symboly jsou terminály. Všechny ostatní symboly, které výraz
+	obsahovat nemůže, jsou zastoupeny symbolem \texttt{\$}. Řádky tabulky označují vrchní terminál v~zásobníku
+	symbolů a~sloupce symbol v~aktuálním tokenu.
 
 	Po spuštění analýzy se podle vrchního terminálu v~zásobníku symbolů a~symbolu aktuálního tokenu provádějí různé
 	operace a~v~některých případech se volá funkce \texttt{get\_next\_token}.
 
-	Pokud znak z~tabulky je \texttt{<}, vložíme zarážku za vrchní terminál, aktuální symbol vložíme na vrch zásobníku
+	Pokud znak z~tabulky je \texttt{<}, vložíme zarážku za vrchní terminál, aktuální symbol vložíme na vrchol zásobníku
 	a~zavoláme funkci \texttt{get\_next\_token}. Pokud znak z~tabulky je \texttt{>} a~existuje pravidlo, podle kterého
-	se dají zredukovat položky zásobníku symbolů od nejvrchnější položky až po zarážku, tak jich zredukujeme a~odstraníme
+	se dají zredukovat položky zásobníku symbolů od nejvrchnější položky až po zarážku, tak je zredukujeme a~odstraníme
 	zarážku. Během provádění redukce podle stanovených pravidel se otestuje sémantika levého a~pravého operandu a~pokud
-	je to potřebné a~možné, provede se implicitní přetypování jednoho nebo obou operandů. Pokud znak je \texttt{=} aktuální
-	symbol vložíme na vrch zásobníku a~zavoláme funkci \texttt{get\_next\_token}. To opakujeme až do kdy na místě v~tabulce
-	určeném vrchním terminálem v~zásobníku symbolů a~symbolem aktuálního tokenu žádný znak není. Pokud vrchní terminál
-	i~aktuální symbol je \texttt{\$} a~na vrchu zásobníku zůstal jeden výsledný neterminál, syntaktická analýza je
+	je to potřebné a~možné, provede se implicitní přetypování jednoho nebo obou operandů. Pokud znak je \texttt{=}, aktuální
+	symbol vložíme na vrchol zásobníku a~zavoláme funkci \texttt{get\_next\_token}. To opakujeme až do chvíle, kdy na místě
+	v~tabulce určeném vrchním terminálem v~zásobníku symbolů a~symbolem aktuálního tokenu žádný znak není. Pokud vrchní
+	terminál i~aktuální symbol je \texttt{\$} a~na vrcholu zásobníku zůstal jeden výsledný neterminál, syntaktická analýza je
 	úspěšná, v~jiných případech končí neúspěšně.
+
 
 	\subsection{Sémantická analýza}
 
-	Ve~struktuře PData jsou uloženy tabulky symbolů, lokální pro lokální proměnné, a~globální pro funkce. Tabulky symbolů jsou implementovány jako tabulky s~náhodným rozptýlením a~slouží ke kontrole, zda se daný identifikátor existuje a~zda souhlasí jeho datový typ, případně návratová hodnota.
+	Ve struktuře \texttt{PData} jsou uloženy tabulky symbolů, lokální pro lokální proměnné, a~globální pro funkce.
+	Tabulky symbolů jsou implementovány jako tabulky s~náhodným rozptýlením a~slouží ke kontrole, zda daný
+	identifikátor existuje a~zda souhlasí jeho datový typ, případně návratová hodnota.
+
 
 	\subsection{Generování cílového kódu}
 
@@ -231,6 +247,7 @@
 	spouštění automatických testů a~čištění dočasných souborů.
 
 
+
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Speciální algoritmy a datové struktury %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\section{Speciální algoritmy a~datové struktury}
 
@@ -250,7 +267,7 @@
 	Jako mapovací funkci jsme použili GNU ELF Hash použitou v~algoritmu, který používá UNIX ELF.
 	Tato funkce je variantou PJW Hash. Použití této mapovací funkce jsme vyhodnotili jako nejvhodnější,
 	více viz \cite{PJWHashFunction2017}. Funkci jsme upravili tak, aby vracela datový typ a~hodnotu,
-	které je přípustná pro naše mapovací pole.
+	která je přípustná pro naše mapovací pole.
 
 	Každá položka tabulky obsahuje unikátní klíč v~podobě řetězce, kterým je identifikátor funkce
 	či proměnné. Dále obsahuje ukazatel na další prvek (synonymum) a~datovou část. Datová část obsahuje
@@ -270,7 +287,7 @@
 
 	\subsection{Dynamický řetězec}
 
-	Vytvořili jsme strukturu \texttt{struct dynamic\_string} pro práci s~řetězci dynamické délky, kterou používáme
+	Vytvořili jsme strukturu \texttt{Dynamic\_string} pro práci s~řetězci dynamické délky, kterou používáme
 	např. pro ukládání řezězce nebo identifikátoru u~atributu tokenu v~lexikální analýze, protože dopředu nevíme,
 	jak bude tento řetězec dlouhý.
 
@@ -287,15 +304,17 @@
 	\subsection{Zásobník symbolů pro precedenční syntaktickou analýzu}
 
 	Implementovali jsme zásobník symbolů v~souboru \texttt{symstack.c}, který používáme při precedenční syntaktické analýze.
-	Jeho rozhraní je v~souboru \texttt{symstack.h}. Má implementovány základní zásobníkové operace jako \texttt{symbol\_stack\_push},
-	\texttt{symbol\_stack\_pop} a~\texttt{symbol\_stack\_top}. Pro účely precedenční syntaktické analýzy jsme implementovali další
-	funkce jako \texttt{symbol\_stack\_top\_terminal}, která vrátí nejvrchnější terminál, a~funkci
-	\texttt{symbol\_stack\_insert\_after\_top\_terminal}, která vloží symbol za nejvrchnější terminál.
+	Jeho rozhraní je v~souboru \texttt{symstack.h}. Má implementovány základní zásobníkové operace jako
+	\texttt{symbol\_stack\_push}, \texttt{symbol\_stack\_pop} a~\texttt{symbol\_stack\_top}. Pro účely
+	precedenční syntaktické analýzy jsme implementovali další funkce jako \texttt{symbol\_stack\_top\_terminal},
+	která vrátí nejvrchnější terminál, a~funkci \texttt{symbol\_stack\_insert\_after\_top\_terminal},
+	která vloží symbol za nejvrchnější terminál.
 
 	Struktura položky zásobníku obsahuje symbol, který jsme získali během precedenční analýzy z~tokenu pomocí funkce
-	\texttt{get\_symbol\_from\_token}, jejíž parametrem je ukazatel na token, a~vrátí symbol ve formě výčtového typu.
+	\texttt{get\_symbol\_from\_token}, jejímž parametrem je ukazatel na token, a~vrátí symbol ve formě výčtového typu.
 	Dále obsahuje datový typ tohoto symbolu, který je inicializován pouze tehdy, pokud symbol může mít datový typ,
 	a~používá se při sémantické kontrole. Struktura také obsahuje ukazatel na další položku.
+
 
 
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Práce v týmu %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -347,6 +366,7 @@
 	\end{table}
 
 
+
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Závěr %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\section{Závěr}
 
@@ -377,12 +397,13 @@
 	\bibliography{dokumentace}
 
 
+
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Přílohy %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	\clearpage
 	\appendix
 
-	\section{Diagram konečného automatu specifikující lexikální analyzátor}
 
+	\section{Diagram konečného automatu specifikující lexikální analyzátor}
 	\begin{figure}[!ht]
 		\centering
 		\vspace{-1.2cm}
@@ -390,82 +411,86 @@
 		\caption{Diagram konečného automatu specifikující lexikální analyzátor}
 		\label{figure:fa_graph}
 	\end{figure}
-	\clearpage
+
 
 	\section{LL -- gramatika}
+	\begin{table}[!ht]
+		\centering
+		\begin{enumerate}[noitemsep]
+			\item \verb|<prog> -> DECLARE FUNCTION ID ( <params> ) AS <type> <prog>|
+			\item \verb|<prog> -> FUNCTION ID ( <params> ) AS <type> EOL <statement> END| \newline \verb|FUNCTION <prog>|
+			\item \verb|<prog> -> EOL <prog>|
+			\item \verb|<prog> -> <scope>|
 
-	\begin{enumerate}[noitemsep]
-  		\item \verb|<prog> -> DECLARE FUNCTION ID ( <params> ) AS <type> <prog>|
-		\item \verb|<prog> -> FUNCTION ID ( <params> ) AS <type> EOL <statement> END| \newline \verb|FUNCTION <prog>|
-		\item \verb|<prog> -> EOL <prog>|
-		\item \verb|<prog> -> <scope>|
+			\item \verb|<scope> -> SCOPE EOL <statement> END SCOPE <end>|
+			\item \verb|<end> -> EOL <end>|
+			\item \verb|<end> -> EOF|
 
-		\item \verb|<scope> -> SCOPE EOL <statement> END SCOPE <end>|
-		\item \verb|<end> -> EOL <end>|
-		\item \verb|<end> -> EOF|
+			\item \verb|<params> -> ID AS <type> <param_n>|
+			\item \verb|<params> -> |$\varepsilon$
 
-		\item \verb|<params> -> ID AS <type> <param_n>|
-		\item \verb|<params> -> |$\varepsilon$
+			\item \verb|<param_n> -> , ID AS <type> <param_n>|
+			\item \verb|<param_n> -> |$\varepsilon$
 
-		\item \verb|<param_n> -> , ID AS <type> <param_n>|
-		\item \verb|<param_n> -> |$\varepsilon$
+			\item \verb|<statement> -> DIM ID AS <data_type> <def_var> EOL <statement>|
+			\item \verb|<statement> -> IF <expression> THEN EOL <statement> ELSE EOL| \newline \verb|<statement> END IF EOL <statement>|
+			\item \verb|<statement> -> DO WHILE <expression> EOL <statement> LOOP EOL| \newline \verb|<statement>|
+			\item \verb|<statement> -> ID = <def_value> EOL <statement>|
+			\item \verb|<statement> -> INPUT ID EOL <statement>|
+			\item \verb|<statement> -> PRINT <expression> ; <print> EOL <statement>|
+			\item \verb|<statement> -> RETURN <expression> EOL <statement>|
+			\item \verb|<statement> -> |$\varepsilon$
 
-		\item \verb|<statement> -> DIM ID AS <data_type> <def_var> EOL <statement>|
-		\item \verb|<statement> -> IF <expression> THEN EOL <statement> ELSE EOL| \newline \verb|<statement> END IF EOL <statement>|
-		\item \verb|<statement> -> DO WHILE <expression> EOL <statement> LOOP EOL| \newline \verb|<statement>|
-		\item \verb|<statement> -> ID = <def_value> EOL <statement>|
-		\item \verb|<statement> -> INPUT ID EOL <statement>|
-		\item \verb|<statement> -> PRINT <expression> ; <print> EOL <statement>|
-		\item \verb|<statement> -> RETURN <expression> EOL <statement>|
-		\item \verb|<statement> -> |$\varepsilon$
+			\item \verb|<def_var> -> = <expression>|
+			\item \verb|<def_var> -> |$\varepsilon$
 
-		\item \verb|<def_var> -> = <expression>|
-		\item \verb|<def_var> -> |$\varepsilon$
+			\item \verb|<def_value> -> ID ( <arg> )|
+			\item \verb|<def_value> -> ASC ( <arg> )|
+			\item \verb|<def_value> -> CHR ( <arg> )|
+			\item \verb|<def_value> -> LENGTH ( <arg> )|
+			\item \verb|<def_value> -> SUBSTR ( <arg> )|
+			\item \verb|<def_value> -> <expression>|
 
-		\item \verb|<def_value> -> ID ( <arg> )|
-		\item \verb|<def_value> -> ASC ( <arg> )|
-		\item \verb|<def_value> -> CHR ( <arg> )|
-		\item \verb|<def_value> -> LENGTH ( <arg> )|
-		\item \verb|<def_value> -> SUBSTR ( <arg> )|
-		\item \verb|<def_value> -> <expression>|
+			\item \verb|<arg> -> <value> <arg_n>|
+			\item \verb|<arg> -> |$\varepsilon$
 
-		\item \verb|<arg> -> <value> <arg_n>|
-		\item \verb|<arg> -> |$\varepsilon$
+			\item \verb|<arg_n> -> , <value> <arg_n>|
+			\item \verb|<arg_n> -> |$\varepsilon$
 
-		\item \verb|<arg_n> -> , <value> <arg_n>|
-		\item \verb|<arg_n> -> |$\varepsilon$
+			\item \verb|<value> -> INT_VALUE|
+			\item \verb|<value> -> DOUBLE_VALUE|
+			\item \verb|<value> -> STRING_VALUE|
+			\item \verb|<value> -> ID|
 
-		\item \verb|<value> -> INT_VALUE|
-		\item \verb|<value> -> DOUBLE_VALUE|
-		\item \verb|<value> -> STRING_VALUE|
-		\item \verb|<value> -> ID|
+			\item \verb|<print> -> <expression> ; <print>|
+			\item \verb|<print> -> |$\varepsilon$
 
-		\item \verb|<print> -> <expression> ; <print>|
-		\item \verb|<print> -> |$\varepsilon$
+			\item \verb|<type> -> INTEGER|
+			\item \verb|<type> -> DOUBLE|
+			\item \verb|<type> -> STRING|
+		\end{enumerate}
 
-		\item \verb|<type> -> INTEGER|
-		\item \verb|<type> -> DOUBLE|
-		\item \verb|<type> -> STRING|
-	\end{enumerate}
+		\caption{LL -- gramatika řídící syntaktickou analýzu}
+		\label{table:ll_gramatika}
+	\end{table}
 
-	\newpage
 
 	\section{LL -- tabulka}
-
 	\begin{table}[!ht]
 		\centering
 		\includegraphics[width=1\linewidth]{inc/LL_table.pdf}
-		\caption{LL tabulka použitá při syntaktické analýze}
+		\caption{LL -- tabulka použitá při syntaktické analýze}
 		\label{table:ll_table}
 	\end{table}
 
-	\section{Precedenční tabulka}
 
+	\section{Precedenční tabulka}
 	\begin{table}[!ht]
 		\centering
 		\includegraphics[width=0.7\linewidth]{inc/prec_table.pdf}
 		\caption{Precedenční tabulka použitá při precedenční syntaktické analýze výrazů}
 		\label{table:prec_table}
 	\end{table}
+
 
 \end{document}
