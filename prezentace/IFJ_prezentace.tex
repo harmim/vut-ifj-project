@@ -1,0 +1,163 @@
+% Author: Vojtěch Hertl
+
+\documentclass[11pt, hyperref={unicode}]{beamer}
+
+\usepackage[czech]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{times} % font
+\usepackage{graphics} % vkládání obrázků
+
+% téma prezentace
+% metropolis progressbar bug - kvuli tomu je na každém snímku varování Overfull \hbox
+\usetheme[progressbar=frametitle]{metropolis}
+% číslování aktuální snímek/celkem snímků
+\setbeamertemplate{footline}[frame number]
+
+
+\title{Formální jazyky a překladače}
+\subtitle{
+	Implementace překladace imperativního jazyka IFJ17.
+	Tým 104, varianta II.
+}
+\author[Dominik Harmim \& Timotej Halás \& Matej Karas \& Vojtěch Hertl]
+{
+	\texorpdfstring{
+		\begin{columns}
+			\column{.45\linewidth}
+			\centering
+			Dominik Harmim\\
+			\footnotesize{\texttt{xharmi00@stud.fit.vutbr.cz}}
+			\column{.45\linewidth}
+			\centering
+			Timotej Halás\\
+			\footnotesize{\texttt{xhalas10@stud.fit.vutbr.cz}}
+		\end{columns}
+		\vspace{0.5cm}
+		\begin{columns}
+			\column{.45\linewidth}
+			\centering
+			Matej Karas\\
+			\footnotesize{\texttt{xkaras34@stud.fit.vutbr.cz}}
+			\column{.45\linewidth}
+			\centering
+			Vojtěch Hertl\\
+			\footnotesize{\texttt{xhertl04@stud.fit.vutbr.cz}}
+		\end{columns}
+		\vspace{1cm}
+	}
+	{Dominik Harmim \& Timotej Halás \& Matej Karas \& Vojtěch Hertl}
+}
+\date{\today}
+\institute
+{
+	Vysoké učení technické v~Brně\\
+	Fakulta informačních technologií
+
+	\bigskip
+
+	\scalebox{0.3}{\includegraphics{img/FIT_barevne_CMYK_CZ.eps}}
+}
+
+
+\begin{document}
+
+
+
+\maketitle
+
+
+
+\begin{frame}{Přehled}
+	% číslovaný obsah
+	\setbeamertemplate{section in toc}[sections numbered]
+	% skrytí podsekcí v obsahu
+	\tableofcontents[hideallsubsections]
+\end{frame}
+
+
+
+\section{Struktura programu}
+
+\begin{frame}
+	\frametitle<1>{Zdrojový kód}
+	\frametitle<2>{Hlavní program}
+	\frametitle<3>{Syntaktický analyzátor}
+	\frametitle<4>{Lexikální analyzátor}
+	\frametitle<5>{Výrazy}
+	\frametitle<6>{Generování kódu}
+
+
+\begin{overprint}
+ 	\onslide<1>\centerline{\includegraphics[width=0.95\linewidth]{img/zdrojovy_kod.pdf}}%
+ 	\onslide<2>\centerline{\includegraphics[width=0.95\linewidth]{img/main.pdf}}%
+ 	\onslide<3>\centerline{\includegraphics[width=0.95\linewidth]{img/parser.pdf}}%
+ 	\onslide<4>\centerline{\includegraphics[width=0.95\linewidth]{img/scanner.pdf}}%
+ 	\onslide<5>\centerline{\includegraphics[width=0.95\linewidth]{img/vyrazy.pdf}}%
+ 	\onslide<6>\centerline{\includegraphics[width=0.95\linewidth]{img/generovani_kodu.pdf}}%
+\end{overprint}
+\vspace{-10cm}
+\begin{overprint}
+  	\onslide<1> 
+  	\begin{itemize}
+		\item IFJ17.
+	\end{itemize}
+ 	\onslide<2>
+  	\begin{itemize}
+		\item Nastavení vstupního souboru.
+		\item Zahájení syntaktické analýzy.
+		\item Generování kódu nebo vracení chyby na výstup.
+	\end{itemize}
+  	\onslide<3>
+  	\begin{itemize}
+		\item Volání lexikální analýzy pro každý token.
+		\item Implementace podle LL gramatiky a LL tabulky.
+		\item Volání generování vnitřního kódu.
+		\item Tabulka symbolů.
+	\end{itemize}
+    \onslide<4>
+    \begin{itemize}
+		\item Implementace podle konečného automatu.
+		\item Načítá ze vstupu a vrací token.
+	\end{itemize}
+    \onslide<5>
+    \begin{itemize}
+		\item Precedenční syntaktická analýza.
+		\item Implementace podle precedenční tabulky.
+		\item Sémantická analýza.
+		\item Volání generování matematických a logických instrukcí.
+	\end{itemize}
+    \onslide<6>
+    \begin{itemize}
+		\item Generování mezikódu IFJcode17.
+		\item Generování vestavěných funkcí.
+	\end{itemize}
+\end{overprint}
+
+\end{frame}
+
+\section{Práce v~týmu}
+
+\begin{frame}{Práce v~týmu}
+	\begin{alertblock}{GitHub}
+		\begin{itemize}
+			\item GitHub jako vzdálený repositář.
+			\item Práce ve své větvi.
+		\end{itemize}
+	\end{alertblock}
+	\begin{alertblock}{Slack}
+		\begin{itemize}
+			\item Tématicky rozdělné skupinové konverzace.
+			\item Automatické notifikace z~GitHubu.
+			\item Upozornění na blížící se deadline.
+		\end{itemize}
+	\end{alertblock}
+	
+\end{frame}
+
+\section{Dotazy}
+
+\begin{frame}{Dotazy}
+	\vspace{-5cm}
+	\Large{Děkuji za pozornost, prostor pro Vaše dotazy.}
+\end{frame}
+\end{document}
